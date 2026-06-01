@@ -1,0 +1,3 @@
+package com.eas.config;
+import java.io.FileInputStream; import java.io.IOException; import java.util.Properties;
+public final class AppConfig { private static final Properties P=new Properties(); static { try(FileInputStream i=new FileInputStream("config/db.properties")){P.load(i);}catch(IOException ex){ P.setProperty("db.url","jdbc:mysql://localhost:3306/employee_attendance_system?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Manila");P.setProperty("db.user","root");P.setProperty("db.password",""); }} private AppConfig(){} public static String get(String key){ return P.getProperty(key,""); } }
