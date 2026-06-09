@@ -14,7 +14,9 @@ public class UserProfilePanel extends JPanel {
     email = new JTextField(22),
     phone = new JTextField(15),
     address = new JTextField(30),
-    emergency = new JTextField(25);       
+    emergency = new JTextField(25),
+    allergy = new JTextField(30),
+    exist_medcon = new JTextField(30);      
     
     
     private final JPasswordField 
@@ -52,6 +54,26 @@ public class UserProfilePanel extends JPanel {
         JPanel p = new JPanel(new GridLayout(0, 3, 8, 8));
         p.setBorder(BorderFactory.createTitledBorder("Employee Medical Details"));
 
+        JLabel btype = new JLabel("Bloodtype");
+        String[] btypeSelect = {"A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-", };
+        JComboBox<String> btypeDropdown = new JComboBox<>(btypeSelect);
+
+        p.add(btype);
+        p.add(btypeDropdown);
+
+
+        JLabel mednoteLbl = new JLabel("Emergency Medical Notes");
+        JTextArea mednote = new JTextArea();
+
+        p.add(mednoteLbl);
+        p.add(mednote);
+        
+        add(p,"Allergy",allergy);
+        add(p,"Existing Medical Condition", exist_medcon);
+
+        p.add(save);
+        p.add(new JLabel(""));
+        
         JLabel certLabel = new JLabel("No file selected");
         JButton certBtn = UITheme.button("Attach");
         certBtn.addActionListener(e -> attachFile(certLabel));
