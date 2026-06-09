@@ -1,0 +1,26 @@
+GR 8: EMPLOYEE ATTENDANCE SYSTEM - VALIDATION REPORT
+Generated for VS Code + Java Swing + MySQL/XAMPP workflow
+
+VALIDATED PACKAGE CONTENTS
+- Java source files: 35
+- Runnable application JAR: dist/EmployeeAttendanceSystem.jar
+- Source-code JAR: dist/EmployeeAttendanceSystem-SourceCode.jar
+- Database file: database/employee_attendance_system.sql
+- SQL tables: 24
+- SQL report views: 6
+- SQL workflow triggers: 6
+- VS Code settings and launch configuration: included
+- Windows and Linux/macOS build/run scripts: included
+- JDBC driver downloader scripts: included
+
+BUILD VALIDATION
+- javac --release 8 compilation: SUCCESS
+- Runnable JAR packaging: SUCCESS
+- Source-code JAR packaging: SUCCESS
+
+IMPORTANT RUNTIME NOTE
+The MySQL Connector/J third-party binary is not embedded in this ZIP because the build
+environment could not resolve the Maven download host. Run the included downloader
+script on your computer to place mysql-connector-j-8.4.0.jar in the lib folder before login.
+The application JAR and source-code JAR are already included.
+- Recompilation from extracted ZIP: SUCCESS

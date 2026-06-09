@@ -1,0 +1,4 @@
+{
+  "version": "0.2.0",
+  "configurations": [{"type":"java","name":"Run Employee Attendance System","request":"launch","mainClass":"com.eas.Main","cwd":"${workspaceFolder}"}]
+}
