@@ -1,4 +1,43 @@
-# GR 8: Employee Attendance System
+# GR 5: Employee Attendance System
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Java Swing desktop system with MySQL/XAMPP database and JDBC connection. Open this entire folder in Visual Studio Code.
 
