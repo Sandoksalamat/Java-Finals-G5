@@ -250,7 +250,10 @@ public class UserProfilePanel extends JPanel {
 
         // ── Wire up actions ───────────────────────────────────────────────
         save.addActionListener(e -> save());
-        saveMedical.addActionListener(e -> save());
+
+        saveMedical.addActionListener(e -> saveMedical(btypeDropdown, mednote,
+        certLabel, injuryLabel, healthLabel, fitnessLabel, wellnessLabel));
+        
         change.addActionListener(e -> change());
 
         JScrollPane scroll = new JScrollPane(center);
@@ -261,6 +264,8 @@ public class UserProfilePanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
 
         load();
+        loadMedical(btypeDropdown, mednote,
+            certLabel, injuryLabel, healthLabel, fitnessLabel, wellnessLabel);
     }
 
     private void addField(JPanel p, String label, JTextField field) {
@@ -278,6 +283,96 @@ public class UserProfilePanel extends JPanel {
             File file = chooser.getSelectedFile();
             label.setText(file.getName());
         }
+    }
+
+    private void saveMedical(JComboBox<String> btypeDropdown, JTextArea mednote,
+            JLabel certLabel, JLabel injuryLabel, JLabel healthLabel,
+            JLabel fitnessLabel, JLabel wellnessLabel) {
+        String btype = (String) btypeDropdown.getSelectedItem();
+        if ("-Select-".equals(btype)) btype = null;
+
+        try (Connection c = Database.getConnection();
+            PreparedStatement ps = c.prepareStatement(
+                "INSERT INTO employee_medical_details " +
+                "  (employee_id, blood_type, allergy, existing_condition, emergency_notes, " +
+                "   medical_certificate, workplace_injury_report, health_declaration, " +
+                "   fitness_to_work_clearance, wellness_activity) " +
+                "VALUES ((SELECT id FROM employees WHERE user_id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE " +
+                "  blood_type               = VALUES(blood_type), " +
+                "  allergy                  = VALUES(allergy), " +
+                "  existing_condition       = VALUES(existing_condition), " +
+                "  emergency_notes          = VALUES(emergency_notes), " +
+                "  medical_certificate      = VALUES(medical_certificate), " +
+                "  workplace_injury_report  = VALUES(workplace_injury_report), " +
+                "  health_declaration       = VALUES(health_declaration), " +
+                "  fitness_to_work_clearance = VALUES(fitness_to_work_clearance), " +
+                "  wellness_activity        = VALUES(wellness_activity)")) {
+
+            ps.setInt(1, session.getId());
+            ps.setString(2, btype);
+            ps.setString(3, allergy.getText().trim());
+            ps.setString(4, exist_medcon.getText().trim());
+            ps.setString(5, mednote.getText().trim());
+
+            // File labels: store the filename text, or null if still "No file selected"
+            ps.setString(6,  toPath(certLabel));
+            ps.setString(7,  toPath(injuryLabel));
+            ps.setString(8,  toPath(healthLabel));
+            ps.setString(9,  toPath(fitnessLabel));
+            ps.setString(10, toPath(wellnessLabel));
+
+            ps.executeUpdate();
+            AuditService.log(session.getId(), "UPDATE", "MEDICAL", "Updated employee medical details.");
+            Dialogs.info(this, "Medical details saved.");
+
+        } catch (Exception ex) {
+            Dialogs.error(this, ex.getMessage());
+        }
+    }
+
+    private void loadMedical(JComboBox<String> btypeDropdown, JTextArea mednote,
+                         JLabel certLabel, JLabel injuryLabel, JLabel healthLabel,
+                         JLabel fitnessLabel, JLabel wellnessLabel) {
+        try (Connection c = Database.getConnection();
+            PreparedStatement ps = c.prepareStatement(
+                "SELECT m.blood_type, m.allergy, m.existing_condition, m.emergency_notes, " +
+                "       m.medical_certificate, m.workplace_injury_report, m.health_declaration, " +
+                "       m.fitness_to_work_clearance, m.wellness_activity " +
+                "FROM employee_medical_details m " +
+                "JOIN employees e ON m.employee_id = e.id " +
+                "WHERE e.user_id = ?")) {
+
+            ps.setInt(1, session.getId());
+            try (ResultSet r = ps.executeQuery()) {
+                if (r.next()) {
+                    String btype = r.getString("blood_type");
+                    if (btype != null) btypeDropdown.setSelectedItem(btype);
+
+                    allergy.setText(r.getString("allergy") != null ? r.getString("allergy") : "");
+                    exist_medcon.setText(r.getString("existing_condition") != null ? r.getString("existing_condition") : "");
+                    mednote.setText(r.getString("emergency_notes") != null ? r.getString("emergency_notes") : "");
+
+                    setFileLabel(certLabel,    r.getString("medical_certificate"));
+                    setFileLabel(injuryLabel,  r.getString("workplace_injury_report"));
+                    setFileLabel(healthLabel,  r.getString("health_declaration"));
+                    setFileLabel(fitnessLabel, r.getString("fitness_to_work_clearance"));
+                    setFileLabel(wellnessLabel,r.getString("wellness_activity"));
+                }
+            }
+        } catch (Exception ex) {
+            Dialogs.error(this, ex.getMessage());
+        }
+    }
+
+    private void setFileLabel(JLabel label, String path) {
+        label.setText(path != null ? path : "No file selected");
+    }
+
+/** Returns null when the user hasn't picked a file yet. */
+    private String toPath(JLabel fileLabel) {
+        String text = fileLabel.getText();
+        return "No file selected".equals(text) ? null : text;
     }
 
     private void load() {
