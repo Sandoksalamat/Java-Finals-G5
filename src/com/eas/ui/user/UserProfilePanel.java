@@ -9,6 +9,14 @@ import java.io.File;
 import java.sql.*;
 import javax.swing.*;
 
+//== Unknown == 
+// H&S safety report 
+// Wellness program
+// Sick Employee monitoring
+// Pre-Employment & Annual med exam record
+
+//== Incomplete ==
+// Occupational Safety Checklist
 public class UserProfilePanel extends JPanel {
 
     private final UserSession session;
