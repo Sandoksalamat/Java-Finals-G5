@@ -53,8 +53,13 @@ public class WorkforceOptimizationPanel extends JPanel {
         swapPanel.add(new JScrollPane(swapTable), BorderLayout.CENTER);
 
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton rejectButton = new JButton("Reject Swap");
         JButton approveButton = new JButton("Approve Swap");
+        
         approveButton.addActionListener(e -> handleApproval());
+        rejectButton.addActionListener(e -> handleRejection());
+        
+        actionPanel.add(rejectButton);
         actionPanel.add(approveButton);
         swapPanel.add(actionPanel, BorderLayout.SOUTH);
 
@@ -69,7 +74,7 @@ public class WorkforceOptimizationPanel extends JPanel {
         add(splitPane, BorderLayout.CENTER);
     }
 
-    private void loadSwapRequests() {
+    public void loadSwapRequests() {
         swapModel.setRowCount(0);
         String query = "SELECT id, requesting_employee_id, target_employee_id, original_schedule_id, reason, status FROM shift_swaps WHERE status = 'PENDING'";
         
@@ -92,14 +97,16 @@ public class WorkforceOptimizationPanel extends JPanel {
         }
     }
 
-    private void loadCoverageReport() {
+    public void loadCoverageReport() {
         coverageModel.setRowCount(0);
         boolean foundInsufficiency = false;
 
-        String query = "SELECT r.department_id, r.shift_id, sa.date, COUNT(sa.id) as assigned_count, r.min_required_staff " +
+        String query = "SELECT r.department_id, r.shift_id, " +
+                       "COALESCE(sa.effective_from, CURDATE()) as report_date, " +
+                       "COUNT(sa.id) as assigned_count, r.min_required_staff " +
                        "FROM department_staffing_requirements r " +
-                       "LEFT JOIN shift_assignments sa ON sa.shift_template_id = r.shift_id " +
-                       "GROUP BY r.department_id, r.shift_id, sa.date";
+                       "LEFT JOIN shift_assignments sa ON sa.shift_id = r.shift_id " +
+                       "GROUP BY r.department_id, r.shift_id, report_date";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query);
@@ -108,13 +115,9 @@ public class WorkforceOptimizationPanel extends JPanel {
             while (rs.next()) {
                 int deptId = rs.getInt("department_id");
                 int shiftId = rs.getInt("shift_id");
-                String dateStr = rs.getString("date");
+                String dateStr = rs.getString("report_date");
                 int currentCount = rs.getInt("assigned_count");
                 int minRequired = rs.getInt("min_required_staff");
-
-                if (dateStr == null) {
-                    continue;
-                }
 
                 String status = "OPTIMAL";
                 if (currentCount < minRequired) {
@@ -159,6 +162,30 @@ public class WorkforceOptimizationPanel extends JPanel {
             loadCoverageReport();
         } else {
             JOptionPane.showMessageDialog(this, "Failed to complete schedule adjustment verification.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleRejection() {
+        int selectedRow = swapTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a swap request from the table.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int requestId = (int) swapModel.getValueAt(selectedRow, 0);
+        String reason = JOptionPane.showInputDialog(this, "Enter reason for rejection:");
+        
+        if (reason == null || reason.trim().isEmpty()) {
+            return;
+        }
+
+        boolean success = schedulingService.rejectShiftSwap(requestId, currentAdminId, reason);
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Shift swap request has been rejected.", "Updated", JOptionPane.INFORMATION_MESSAGE);
+            loadSwapRequests();
+            loadCoverageReport();
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to update database.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

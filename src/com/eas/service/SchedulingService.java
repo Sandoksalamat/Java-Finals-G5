@@ -130,4 +130,18 @@ public class SchedulingService {
         }
         return false;
     }
+
+    public boolean rejectShiftSwap(int swapRequestId, int adminId, String reason) {
+        String query = "UPDATE shift_swaps SET status = 'REJECTED', approved_by = ?, reason = CONCAT(reason, ' | Reject Reason: ', ?) WHERE id = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, adminId);
+            stmt.setString(2, reason);
+            stmt.setInt(3, swapRequestId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
