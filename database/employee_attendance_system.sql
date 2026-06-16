@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 15, 2026 at 06:12 PM
+-- Generation Time: Jun 16, 2026 at 04:26 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -265,7 +265,10 @@ INSERT INTO `audit_logs` (`id`, `user_id`, `action_type`, `module_name`, `descri
 (53, 2, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-15 15:46:46'),
 (54, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-15 15:46:51'),
 (55, 1, 'UPDATE', 'SICK_MONITORING', 'Updated sick record #1', '2026-06-15 15:47:19'),
-(56, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-15 16:09:25');
+(56, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-15 16:09:25'),
+(57, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 02:20:45'),
+(58, 2, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-16 02:21:10'),
+(59, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 02:21:16');
 
 -- --------------------------------------------------------
 
@@ -373,6 +376,27 @@ INSERT INTO `employee_medical_details` (`id`, `employee_id`, `blood_type`, `alle
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `health_safety_incidents`
+--
+
+CREATE TABLE `health_safety_incidents` (
+  `id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `incident_date` date NOT NULL,
+  `incident_type` enum('NEAR_MISS','MINOR_INJURY','MAJOR_INJURY','ILLNESS','PROPERTY_DAMAGE','FIRE','OTHER') NOT NULL DEFAULT 'OTHER',
+  `location` varchar(150) DEFAULT NULL,
+  `description` text NOT NULL,
+  `immediate_action` text DEFAULT NULL,
+  `reported_by` int(11) DEFAULT NULL COMMENT 'user_id of reporter',
+  `investigated_by` int(11) DEFAULT NULL COMMENT 'user_id of investigator',
+  `investigation_notes` text DEFAULT NULL,
+  `status` enum('REPORTED','UNDER_INVESTIGATION','CLOSED') NOT NULL DEFAULT 'REPORTED',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `holidays`
 --
 
@@ -457,6 +481,61 @@ INSERT INTO `leave_types` (`id`, `leave_code`, `leave_name`, `annual_credits`, `
 (2, 'SL', 'Sick Leave', 15.00, 'PAID', 'ACTIVE'),
 (3, 'EL', 'Emergency Leave', 5.00, 'PAID', 'ACTIVE'),
 (4, 'LWOP', 'Leave Without Pay', 0.00, 'UNPAID', 'ACTIVE');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `medical_examinations`
+--
+
+CREATE TABLE `medical_examinations` (
+  `id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `exam_type` enum('PRE_EMPLOYMENT','ANNUAL','RETURN_TO_WORK','SPECIAL') NOT NULL,
+  `exam_date` date NOT NULL,
+  `examining_physician` varchar(150) DEFAULT NULL,
+  `medical_facility` varchar(150) DEFAULT NULL,
+  `blood_type` enum('A+','A-','AB+','AB-','B+','B-','O+','O-') DEFAULT NULL,
+  `blood_pressure` varchar(20) DEFAULT NULL COMMENT 'e.g. 120/80',
+  `heart_rate` int(11) DEFAULT NULL COMMENT 'bpm',
+  `height_cm` decimal(5,1) DEFAULT NULL,
+  `weight_kg` decimal(5,1) DEFAULT NULL,
+  `vision_left` varchar(20) DEFAULT NULL COMMENT 'e.g. 20/20',
+  `vision_right` varchar(20) DEFAULT NULL,
+  `hearing_left` varchar(20) DEFAULT NULL COMMENT 'e.g. Normal, Mild Loss',
+  `hearing_right` varchar(20) DEFAULT NULL,
+  `chest_xray` varchar(100) DEFAULT NULL COMMENT 'e.g. Normal, See Notes',
+  `urinalysis` varchar(100) DEFAULT NULL,
+  `cbc` varchar(100) DEFAULT NULL COMMENT 'Complete Blood Count result',
+  `findings` text DEFAULT NULL COMMENT 'General physician findings',
+  `recommendations` text DEFAULT NULL,
+  `fit_to_work` tinyint(1) DEFAULT 1,
+  `status` enum('PENDING','COMPLETED','FLAGGED') NOT NULL DEFAULT 'PENDING',
+  `admin_remarks` varchar(255) DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `medical_restrictions`
+--
+
+CREATE TABLE `medical_restrictions` (
+  `id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `incident_id` int(11) DEFAULT NULL COMMENT 'optional link to an incident',
+  `rtw_clearance_id` int(11) DEFAULT NULL COMMENT 'optional link to RTW clearance',
+  `restriction_type` varchar(100) NOT NULL COMMENT 'e.g. Light Duty, No Lifting, Desk Only',
+  `start_date` date NOT NULL,
+  `end_date` date DEFAULT NULL COMMENT 'NULL = indefinite',
+  `prescribed_by` varchar(150) DEFAULT NULL,
+  `details` text DEFAULT NULL,
+  `status` enum('ACTIVE','LIFTED','EXPIRED') NOT NULL DEFAULT 'ACTIVE',
+  `admin_remarks` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -802,6 +881,26 @@ CREATE TABLE `v_employee_roster` (
 -- --------------------------------------------------------
 
 --
+-- Stand-in structure for view `v_hs_incident_summary`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_hs_incident_summary` (
+`id` int(11)
+,`employee_no` varchar(30)
+,`full_name` varchar(120)
+,`department_name` varchar(100)
+,`incident_date` date
+,`incident_type` enum('NEAR_MISS','MINOR_INJURY','MAJOR_INJURY','ILLNESS','PROPERTY_DAMAGE','FIRE','OTHER')
+,`location` varchar(150)
+,`description` text
+,`incident_status` enum('REPORTED','UNDER_INVESTIGATION','CLOSED')
+,`active_restrictions` bigint(21)
+,`approved_rtw_clearances` bigint(21)
+);
+
+-- --------------------------------------------------------
+
+--
 -- Stand-in structure for view `v_late_absence_summary`
 -- (See below for the actual view)
 --
@@ -894,6 +993,42 @@ CREATE TABLE `v_sick_monitoring` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `wellness_participants`
+--
+
+CREATE TABLE `wellness_participants` (
+  `id` int(11) NOT NULL,
+  `program_id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `status` enum('ENROLLED','ATTENDED','ABSENT','EXCUSED') NOT NULL DEFAULT 'ENROLLED',
+  `remarks` varchar(255) DEFAULT NULL,
+  `enrolled_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `wellness_programs`
+--
+
+CREATE TABLE `wellness_programs` (
+  `id` int(11) NOT NULL,
+  `program_title` varchar(150) NOT NULL,
+  `program_type` enum('HEALTH_SEMINAR','STRESS_MANAGEMENT','PHYSICAL_FITNESS','VACCINATION_DRIVE','OTHER') NOT NULL,
+  `facilitator` varchar(100) DEFAULT NULL COMMENT 'Speaker, trainer, or provider name',
+  `venue` varchar(150) DEFAULT NULL,
+  `program_date` date NOT NULL,
+  `duration_hours` decimal(4,1) DEFAULT NULL,
+  `max_participants` int(11) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `status` enum('SCHEDULED','ONGOING','COMPLETED','CANCELLED') NOT NULL DEFAULT 'SCHEDULED',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `work_schedules`
 --
 
@@ -939,6 +1074,15 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `v_employee_roster`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_employee_roster`  AS SELECT `e`.`id` AS `id`, `e`.`employee_no` AS `employee_no`, `u`.`full_name` AS `full_name`, `u`.`email` AS `email`, `d`.`department_name` AS `department_name`, `p`.`position_title` AS `position_title`, `e`.`date_hired` AS `date_hired`, `e`.`employment_status` AS `employment_status` FROM (((`employees` `e` join `users` `u` on(`e`.`user_id` = `u`.`id`)) left join `departments` `d` on(`e`.`department_id` = `d`.`id`)) left join `positions` `p` on(`e`.`position_id` = `p`.`id`)) ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_hs_incident_summary`
+--
+DROP TABLE IF EXISTS `v_hs_incident_summary`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_hs_incident_summary`  AS SELECT `i`.`id` AS `id`, `e`.`employee_no` AS `employee_no`, `u`.`full_name` AS `full_name`, `d`.`department_name` AS `department_name`, `i`.`incident_date` AS `incident_date`, `i`.`incident_type` AS `incident_type`, `i`.`location` AS `location`, `i`.`description` AS `description`, `i`.`status` AS `incident_status`, (select count(0) from `medical_restrictions` `mr` where `mr`.`incident_id` = `i`.`id` and `mr`.`status` = 'ACTIVE') AS `active_restrictions`, (select count(0) from `return_to_work_clearances` `r` where `r`.`employee_id` = `i`.`employee_id` and `r`.`status` = 'APPROVED') AS `approved_rtw_clearances` FROM (((`health_safety_incidents` `i` join `employees` `e` on(`i`.`employee_id` = `e`.`id`)) join `users` `u` on(`e`.`user_id` = `u`.`id`)) left join `departments` `d` on(`e`.`department_id` = `d`.`id`)) ORDER BY `i`.`incident_date` DESC ;
 
 -- --------------------------------------------------------
 
@@ -1082,6 +1226,15 @@ ALTER TABLE `employee_medical_details`
   ADD KEY `idx_medical_employee` (`employee_id`);
 
 --
+-- Indexes for table `health_safety_incidents`
+--
+ALTER TABLE `health_safety_incidents`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `employee_id` (`employee_id`),
+  ADD KEY `reported_by` (`reported_by`),
+  ADD KEY `investigated_by` (`investigated_by`);
+
+--
 -- Indexes for table `holidays`
 --
 ALTER TABLE `holidays`
@@ -1104,6 +1257,23 @@ ALTER TABLE `leave_requests`
 ALTER TABLE `leave_types`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `leave_code` (`leave_code`);
+
+--
+-- Indexes for table `medical_examinations`
+--
+ALTER TABLE `medical_examinations`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `employee_id` (`employee_id`),
+  ADD KEY `created_by` (`created_by`);
+
+--
+-- Indexes for table `medical_restrictions`
+--
+ALTER TABLE `medical_restrictions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `employee_id` (`employee_id`),
+  ADD KEY `incident_id` (`incident_id`),
+  ADD KEY `rtw_clearance_id` (`rtw_clearance_id`);
 
 --
 -- Indexes for table `messages`
@@ -1196,6 +1366,21 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Indexes for table `wellness_participants`
+--
+ALTER TABLE `wellness_participants`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_program_employee` (`program_id`,`employee_id`),
+  ADD KEY `employee_id` (`employee_id`);
+
+--
+-- Indexes for table `wellness_programs`
+--
+ALTER TABLE `wellness_programs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `created_by` (`created_by`);
+
+--
 -- Indexes for table `work_schedules`
 --
 ALTER TABLE `work_schedules`
@@ -1247,7 +1432,7 @@ ALTER TABLE `attendance_summaries`
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `biometric_devices`
@@ -1274,6 +1459,12 @@ ALTER TABLE `employee_medical_details`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `health_safety_incidents`
+--
+ALTER TABLE `health_safety_incidents`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `holidays`
 --
 ALTER TABLE `holidays`
@@ -1290,6 +1481,18 @@ ALTER TABLE `leave_requests`
 --
 ALTER TABLE `leave_types`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `medical_examinations`
+--
+ALTER TABLE `medical_examinations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `medical_restrictions`
+--
+ALTER TABLE `medical_restrictions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `messages`
@@ -1362,6 +1565,18 @@ ALTER TABLE `system_settings`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `wellness_participants`
+--
+ALTER TABLE `wellness_participants`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `wellness_programs`
+--
+ALTER TABLE `wellness_programs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `work_schedules`
@@ -1437,12 +1652,35 @@ ALTER TABLE `employee_medical_details`
   ADD CONSTRAINT `employee_medical_details_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `health_safety_incidents`
+--
+ALTER TABLE `health_safety_incidents`
+  ADD CONSTRAINT `health_safety_incidents_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `health_safety_incidents_ibfk_2` FOREIGN KEY (`reported_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `health_safety_incidents_ibfk_3` FOREIGN KEY (`investigated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `leave_requests`
 --
 ALTER TABLE `leave_requests`
   ADD CONSTRAINT `leave_requests_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `leave_requests_ibfk_2` FOREIGN KEY (`leave_type_id`) REFERENCES `leave_types` (`id`),
   ADD CONSTRAINT `leave_requests_ibfk_3` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `medical_examinations`
+--
+ALTER TABLE `medical_examinations`
+  ADD CONSTRAINT `medical_examinations_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `medical_examinations_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `medical_restrictions`
+--
+ALTER TABLE `medical_restrictions`
+  ADD CONSTRAINT `medical_restrictions_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `medical_restrictions_ibfk_2` FOREIGN KEY (`incident_id`) REFERENCES `health_safety_incidents` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `medical_restrictions_ibfk_3` FOREIGN KEY (`rtw_clearance_id`) REFERENCES `return_to_work_clearances` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `messages`
@@ -1489,6 +1727,19 @@ ALTER TABLE `shift_assignments`
 --
 ALTER TABLE `sick_records`
   ADD CONSTRAINT `sick_records_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`);
+
+--
+-- Constraints for table `wellness_participants`
+--
+ALTER TABLE `wellness_participants`
+  ADD CONSTRAINT `wellness_participants_ibfk_1` FOREIGN KEY (`program_id`) REFERENCES `wellness_programs` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `wellness_participants_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `wellness_programs`
+--
+ALTER TABLE `wellness_programs`
+  ADD CONSTRAINT `wellness_programs_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `work_schedules`
