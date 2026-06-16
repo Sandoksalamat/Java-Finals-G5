@@ -59,7 +59,9 @@ public class UserDashboardFrame extends JFrame {
         tabs.addTab("My Overtime",   new MyOvertimePanel(s));
         tabs.addTab("My Sick Record", new MySickRecordPanel(s));
         tabs.addTab("My Wellness Programs",   new MyWellnessPanel(s));
+        tabs.addTab("My Health & Safety",     new MyHealthSafetyPanel(s));
         tabs.addTab("My RTW Clearances",      new MyRTWClearancePanel(s));
+        tabs.addTab("My Medical Exams",   new MyMedicalExamPanel(s));
         tabs.addTab("Corrections",   new MyCorrectionPanel(s));
         tabs.addTab("Announcements", buildAnnouncementsPanel(s));
         tabs.addTab("Notifications", new NotificationPanel(s));

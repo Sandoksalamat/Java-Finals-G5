@@ -1,3 +1,0 @@
-package com.eas.util;
-import java.sql.*; import java.util.Vector; import javax.swing.JTable; import javax.swing.table.DefaultTableModel;
-public final class TableUtil { private TableUtil(){} public static void load(JTable table,ResultSet rs)throws SQLException{ ResultSetMetaData m=rs.getMetaData();Vector<String> cols=new Vector<String>();for(int i=1;i<=m.getColumnCount();i++)cols.add(m.getColumnLabel(i));Vector<Vector<Object>> data=new Vector<Vector<Object>>();while(rs.next()){Vector<Object> row=new Vector<Object>();for(int i=1;i<=m.getColumnCount();i++)row.add(rs.getObject(i));data.add(row);} table.setModel(new DefaultTableModel(data,cols){public boolean isCellEditable(int r,int c){return false;}}); table.setAutoCreateRowSorter(true); } }

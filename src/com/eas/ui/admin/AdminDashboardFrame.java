@@ -63,8 +63,10 @@ public class AdminDashboardFrame extends JFrame {
         t.addTab("Messages",new AdminMessagePanel(s));
         t.addTab("Sick Monitoring", new SickMonitoringPanel(s));
         t.addTab("Reports",new ReportsPanel());
+        t.addTab("Medical Exams",     new MedicalExamPanel(s));
         t.addTab("Wellness Programs",  new WellnessProgramPanel(s));
         t.addTab("RTW Clearances",     new ReturnToWorkPanel(s));
+        t.addTab("Health & Safety",   new HealthSafetyPanel(s));
         t.addTab("Audit Trail",new ReadOnlyQueryPanel("System Audit Logs","SELECT a.id,u.username,a.action_type,a.module_name,a.description,a.logged_at FROM audit_logs a LEFT JOIN users u ON a.user_id=u.id ORDER BY a.id DESC","SELECT a.id,u.username,a.action_type,a.module_name,a.description,a.logged_at FROM audit_logs a LEFT JOIN users u ON a.user_id=u.id WHERE u.username LIKE ? OR a.module_name LIKE ? OR a.description LIKE ? ORDER BY a.id DESC","audit_logs"));
         
         add(t,BorderLayout.CENTER);
