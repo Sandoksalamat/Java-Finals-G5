@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 -- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
@@ -6,6 +7,13 @@
 -- Generation Time: Jun 16, 2026 at 04:26 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
+=======
+-- GR 5: EMPLOYEE ATTENDANCE SYSTEM
+-- MySQL / XAMPP Database Script
+DROP DATABASE IF EXISTS employee_attendance_system;
+CREATE DATABASE employee_attendance_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE employee_attendance_system;
+>>>>>>> 7ae65b2248b3a8392339438984f19f3471591009
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -89,6 +97,7 @@ END
 $$
 DELIMITER ;
 
+<<<<<<< HEAD
 -- --------------------------------------------------------
 
 --
@@ -1752,3 +1761,116 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+=======
+CREATE VIEW v_employee_roster AS
+SELECT e.id,e.employee_no,u.full_name,u.email,d.department_name,p.position_title,e.date_hired,e.employment_status
+FROM employees e JOIN users u ON e.user_id=u.id LEFT JOIN departments d ON e.department_id=d.id LEFT JOIN positions p ON e.position_id=p.id;
+CREATE VIEW v_daily_attendance AS
+SELECT ar.id,ar.attendance_date,e.employee_no,u.full_name,d.department_name,s.shift_name,ar.clock_in,ar.clock_out,ar.late_minutes,ar.undertime_minutes,ar.overtime_minutes,ar.attendance_status
+FROM attendance_records ar JOIN employees e ON ar.employee_id=e.id JOIN users u ON e.user_id=u.id LEFT JOIN departments d ON e.department_id=d.id LEFT JOIN shift_templates s ON ar.shift_id=s.id;
+CREATE VIEW v_late_absence_summary AS
+SELECT e.employee_no,u.full_name,d.department_name,COUNT(CASE WHEN ar.attendance_status='ABSENT' THEN 1 END) absent_days,SUM(ar.late_minutes) late_minutes,SUM(ar.undertime_minutes) undertime_minutes
+FROM employees e JOIN users u ON e.user_id=u.id LEFT JOIN departments d ON e.department_id=d.id LEFT JOIN attendance_records ar ON e.id=ar.employee_id GROUP BY e.id,e.employee_no,u.full_name,d.department_name;
+CREATE VIEW v_leave_monitoring AS
+SELECT lr.id,e.employee_no,u.full_name,lt.leave_name,lr.start_date,lr.end_date,lr.total_days,lr.reason,lr.status,lr.filed_at
+FROM leave_requests lr JOIN employees e ON lr.employee_id=e.id JOIN users u ON e.user_id=u.id JOIN leave_types lt ON lr.leave_type_id=lt.id;
+CREATE VIEW v_overtime_monitoring AS
+SELECT o.id,e.employee_no,u.full_name,o.overtime_date,o.requested_hours,o.approved_hours,o.purpose,o.status
+FROM overtime_requests o JOIN employees e ON o.employee_id=e.id JOIN users u ON e.user_id=u.id;
+CREATE VIEW v_payroll_attendance_summary AS
+SELECT pp.period_name,e.employee_no,u.full_name,s.present_days,s.absent_days,s.leave_days,s.late_minutes,s.undertime_minutes,s.overtime_hours
+FROM attendance_summaries s JOIN payroll_periods pp ON s.payroll_period_id=pp.id JOIN employees e ON s.employee_id=e.id JOIN users u ON e.user_id=u.id;
+
+ALTER TABLE attendance_records 
+MODIFY COLUMN attendance_status ENUM(
+    'PRESENT', 'LATE', 'ABSENT', 'ON_LEAVE', 'REST_DAY', 'HOLIDAY', 'CORRECTED',
+    'WFH', 'OFFICIAL_BUSINESS', 'FIELD_ASSIGNMENT', 'TRAVEL_DUTY'
+) DEFAULT 'PRESENT';
+
+CREATE TABLE offsite_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    request_type ENUM('WFH', 'OFFICIAL_BUSINESS', 'FIELD_ASSIGNMENT', 'TRAVEL_DUTY') NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    destination_or_location VARCHAR(255) NOT NULL,
+    purpose TEXT NOT NULL,
+    status ENUM('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED') DEFAULT 'PENDING',
+    filed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by INT,
+    reviewed_at DATETIME,
+    admin_remarks VARCHAR(255),
+    FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+    FOREIGN KEY(reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE offsite_accomplishments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    attendance_date DATE NOT NULL,
+    accomplishment_text TEXT NOT NULL,
+    document_path VARCHAR(255),
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verification_status ENUM('PENDING', 'VERIFIED', 'REJECTED') DEFAULT 'PENDING',
+    verified_by INT,
+    verified_at DATETIME,
+    manager_remarks VARCHAR(255),
+    UNIQUE KEY uq_daily_accomplishment(employee_id, attendance_date),
+    FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+    FOREIGN KEY(verified_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE attendance_records 
+ADD COLUMN is_offsite_verified TINYINT(1) DEFAULT 0 AFTER remarks;
+
+ALTER TABLE attendance_logs 
+ADD COLUMN latitude DECIMAL(10, 8) DEFAULT NULL,
+ADD COLUMN longitude DECIMAL(11, 8) DEFAULT NULL,
+ADD COLUMN attachment_proof_path VARCHAR(255) DEFAULT NULL;
+
+CREATE INDEX idx_offsite_request_status ON offsite_requests(status);
+CREATE INDEX idx_accomplishment_date ON offsite_accomplishments(attendance_date);
+
+DELIMITER $$
+
+CREATE TRIGGER trg_offsite_created AFTER INSERT ON offsite_requests FOR EACH ROW
+BEGIN
+    INSERT INTO notifications(user_id, title, message_body, notification_type)
+    SELECT user_id, 'Off-Site Request Filed', CONCAT('Your ', NEW.request_type, ' request #', NEW.id, ' is pending review.'), 'OFFSITE' 
+    FROM employees WHERE id = NEW.employee_id AND user_id IS NOT NULL;
+END$$
+
+CREATE TRIGGER trg_offsite_reviewed AFTER UPDATE ON offsite_requests FOR EACH ROW
+BEGIN
+    IF NEW.status <> OLD.status THEN
+        INSERT INTO notifications(user_id, title, message_body, notification_type)
+        SELECT user_id, 'Off-Site Request Updated', CONCAT('Your ', NEW.request_type, ' request #', NEW.id, ' status is now ', NEW.status, '.'), 'OFFSITE' 
+        FROM employees WHERE id = NEW.employee_id AND user_id IS NOT NULL;
+    END IF;
+END$$
+
+DELIMITER ;
+
+CREATE VIEW v_hybrid_field_reporting AS
+SELECT 
+    ar.attendance_date,
+    e.employee_no,
+    u.full_name AS employee_name,
+    d.department_name,
+    ar.attendance_status AS duty_classification,
+    ar.clock_in,
+    ar.clock_out,
+    osr.destination_or_location AS approved_destination,
+    osa.accomplishment_text,
+    osa.document_path AS attached_proof,
+    osa.verification_status AS supervisor_verification
+FROM attendance_records ar
+JOIN employees e ON ar.employee_id = e.id
+JOIN users u ON e.user_id = u.id
+LEFT JOIN departments d ON e.department_id = d.id
+LEFT JOIN offsite_requests osr ON e.id = osr.employee_id 
+    AND ar.attendance_date BETWEEN osr.start_date AND osr.end_date 
+    AND osr.status = 'APPROVED'
+LEFT JOIN offsite_accomplishments osa ON e.id = osa.employee_id 
+    AND ar.attendance_date = osa.attendance_date;
+>>>>>>> 7ae65b2248b3a8392339438984f19f3471591009
