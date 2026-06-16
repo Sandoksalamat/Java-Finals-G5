@@ -16,17 +16,21 @@ public class HybridAttendanceService {
         String sql = "INSERT INTO offsite_requests (employee_id, request_type, start_date, end_date, destination_or_location, purpose) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setInt(1, request.getEmployeeId());
+
+            pstmt.setInt(1, request.getId());
             pstmt.setString(2, request.getRequestType());
-            pstmt.setDate(3, Date.valueOf(request.getStartDate()));
-            pstmt.setDate(4, Date.valueOf(request.getEndDate()));
+            pstmt.setDate(3, java.sql.Date.valueOf(request.getStartDate()));
+            pstmt.setDate(4, java.sql.Date.valueOf(request.getEndDate()));
             pstmt.setString(5, request.getDestinationOrLocation());
             pstmt.setString(6, request.getPurpose());
-            
+
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(null, 
+        "Database Error: " + e.getMessage(), 
+        "SQL Exception Triggered", 
+        javax.swing.JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
@@ -145,12 +149,11 @@ public class HybridAttendanceService {
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setInt(1, report.getEmployeeId());
+            pstmt.setInt(1, report.getId());
             pstmt.setDate(2, Date.valueOf(report.getAttendanceDate()));
             pstmt.setString(3, report.getAccomplishmentText());
             pstmt.setString(4, report.getDocumentPath());
             
-            // For duplicate key fallback statement mapping overrides
             pstmt.setString(5, report.getAccomplishmentText());
             pstmt.setString(6, report.getDocumentPath());
             
