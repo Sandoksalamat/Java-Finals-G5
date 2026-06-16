@@ -1,9 +1,9 @@
 package com.eas.ui.admin;
 
-import com.eas.auth.LoginFrame;
-import com.eas.model.UserSession;
-import com.eas.service.AuditService;
-import com.eas.util.UITheme;
+import com.eas.auth.LoginFrame; 
+import com.eas.model.UserSession; 
+import com.eas.service.AuditService; 
+import com.eas.util.UITheme; 
 import java.awt.*; 
 import javax.swing.*;
 
@@ -12,7 +12,7 @@ public class AdminDashboardFrame extends JFrame {
 
     public AdminDashboardFrame(UserSession s){
         session=s;
-        setTitle("GR 8 - Employee Attendance System | Administrator");
+        setTitle("GR 5 - Employee Attendance System | Administrator");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1500,850);
         setLocationRelativeTo(null);
@@ -50,6 +50,8 @@ public class AdminDashboardFrame extends JFrame {
         t.addTab("Schedules",crud("Work Schedules","SCHEDULES","SELECT id,employee_id,schedule_date,shift_id,schedule_status,remarks FROM work_schedules ORDER BY schedule_date DESC","SELECT id,employee_id,schedule_date,shift_id,schedule_status,remarks FROM work_schedules WHERE schedule_status LIKE ? OR remarks LIKE ? OR CAST(employee_id AS CHAR) LIKE ?","schedules","INSERT INTO work_schedules(employee_id,schedule_date,shift_id,schedule_status,remarks) VALUES(?,?,?,?,?)","UPDATE work_schedules SET employee_id=?,schedule_date=?,shift_id=?,schedule_status=?,remarks=? WHERE id=?","DELETE FROM work_schedules WHERE id=?","Employee ID","Date","Shift ID","Schedule Status","Remarks"));
         t.addTab("Optimization", new WorkforceOptimizationPanel(s.getId()));
         t.addTab("Holidays",crud("Holiday Calendar","HOLIDAYS","SELECT id,holiday_date,holiday_name,holiday_type,multiplier,status FROM holidays ORDER BY holiday_date DESC","SELECT id,holiday_date,holiday_name,holiday_type,multiplier,status FROM holidays WHERE holiday_name LIKE ? OR holiday_type LIKE ? OR status LIKE ?","holidays","INSERT INTO holidays(holiday_date,holiday_name,holiday_type,multiplier,status) VALUES(?,?,?,?,?)","UPDATE holidays SET holiday_date=?,holiday_name=?,holiday_type=?,multiplier=?,status=? WHERE id=?","DELETE FROM holidays WHERE id=?","Holiday Date","Holiday Name","Type","Multiplier","Status"));
+        t.addTab("Off-Site Approvals", new OffSiteApprovalPanel(s.getId()));
+        t.addTab("Hybrid Report Logs", new HybridReportPanel());
         t.addTab("Attendance",new AttendanceManagementPanel(s));
         t.addTab("Logs",new ReadOnlyQueryPanel("Attendance Punch Logs","SELECT l.id,e.employee_no,u.full_name,l.log_type,l.logged_at,l.device_id,l.notes FROM attendance_logs l JOIN employees e ON l.employee_id=e.id JOIN users u ON e.user_id=u.id ORDER BY l.id DESC","SELECT l.id,e.employee_no,u.full_name,l.log_type,l.logged_at,l.device_id,l.notes FROM attendance_logs l JOIN employees e ON l.employee_id=e.id JOIN users u ON e.user_id=u.id WHERE e.employee_no LIKE ? OR u.full_name LIKE ? OR l.log_type LIKE ? ORDER BY l.id DESC","attendance_logs"));
         t.addTab("Leaves",new LeaveApprovalPanel(s));
@@ -61,12 +63,7 @@ public class AdminDashboardFrame extends JFrame {
         t.addTab("Adjustments",crud("Payroll Adjustments","ADJUSTMENTS","SELECT id,payroll_period_id,employee_id,adjustment_type,amount,description,created_at FROM payslip_adjustments ORDER BY id DESC","SELECT id,payroll_period_id,employee_id,adjustment_type,amount,description,created_at FROM payslip_adjustments WHERE adjustment_type LIKE ? OR description LIKE ? OR CAST(employee_id AS CHAR) LIKE ?","adjustments","INSERT INTO payslip_adjustments(payroll_period_id,employee_id,adjustment_type,amount,description) VALUES(?,?,?,?,?)","UPDATE payslip_adjustments SET payroll_period_id=?,employee_id=?,adjustment_type=?,amount=?,description=? WHERE id=?","DELETE FROM payslip_adjustments WHERE id=?","Period ID","Employee ID","Type","Amount","Description"));
         t.addTab("Announcements",crud("Announcements","ANNOUNCEMENTS","SELECT id,title,content,target_audience,posted_by,valid_until,status FROM announcements ORDER BY id DESC","SELECT id,title,content,target_audience,posted_by,valid_until,status FROM announcements WHERE title LIKE ? OR target_audience LIKE ? OR status LIKE ?","announcements","INSERT INTO announcements(title,content,target_audience,posted_by,valid_until,status) VALUES(?,?,?,?,?,?)","UPDATE announcements SET title=?,content=?,target_audience=?,posted_by=?,valid_until=?,status=? WHERE id=?","DELETE FROM announcements WHERE id=?","Title","Content","Audience","Posted By ID","Valid Until","Status"));
         t.addTab("Messages",new AdminMessagePanel(s));
-        t.addTab("Sick Monitoring", new SickMonitoringPanel(s));
         t.addTab("Reports",new ReportsPanel());
-        t.addTab("Medical Exams",     new MedicalExamPanel(s));
-        t.addTab("Wellness Programs",  new WellnessProgramPanel(s));
-        t.addTab("RTW Clearances",     new ReturnToWorkPanel(s));
-        t.addTab("Health & Safety",   new HealthSafetyPanel(s));
         t.addTab("Audit Trail",new ReadOnlyQueryPanel("System Audit Logs","SELECT a.id,u.username,a.action_type,a.module_name,a.description,a.logged_at FROM audit_logs a LEFT JOIN users u ON a.user_id=u.id ORDER BY a.id DESC","SELECT a.id,u.username,a.action_type,a.module_name,a.description,a.logged_at FROM audit_logs a LEFT JOIN users u ON a.user_id=u.id WHERE u.username LIKE ? OR a.module_name LIKE ? OR a.description LIKE ? ORDER BY a.id DESC","audit_logs"));
         
         add(t,BorderLayout.CENTER);
