@@ -25,6 +25,4 @@ public class UserSession {
     public boolean isAdmin() {
         return "ADMIN".equals(role);
     }
-
-    
 }
