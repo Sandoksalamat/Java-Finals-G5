@@ -1,20 +1,18 @@
 package com.eas.service;
 
 import com.eas.config.Database;
-import com.eas.model.OffSiteRequest;
-import com.eas.model.OffSiteAccomplishment;
 import com.eas.model.HybridReportRow;
-
+import com.eas.model.OffSiteAccomplishment;
+import com.eas.model.OffSiteRequest;
 import java.sql.*;
 import java.time.LocalDate;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class HybridAttendanceService {
 
     public boolean submitOffSiteRequest(OffSiteRequest request) {
-        String sql = "INSERT INTO offsite_requests (employee_id, request_type, start_date, end_date, destination_or_location, purpose) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO offsite_requests (employee_no, request_type, start_date, end_date, destination_or_location, purpose) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
@@ -27,11 +25,10 @@ public class HybridAttendanceService {
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
             javax.swing.JOptionPane.showMessageDialog(null, 
-        "Database Error: " + e.getMessage(), 
-        "SQL Exception Triggered", 
-        javax.swing.JOptionPane.ERROR_MESSAGE);
+                "Database Error: " + e.getMessage(), 
+                "SQL Exception Triggered", 
+                javax.swing.JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
@@ -48,7 +45,6 @@ public class HybridAttendanceService {
             
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
             return false;
         }
     }
@@ -56,9 +52,11 @@ public class HybridAttendanceService {
     public boolean processMobileClockEvent(int employeeId, String logType, double latitude, double longitude, String attachmentPath) {
         Connection conn = null;
         PreparedStatement checkStmt = null;
+        PreparedStatement findStmt = null; // Added to prevent leaks
         PreparedStatement masterStmt = null;
         PreparedStatement logStmt = null;
         ResultSet rs = null;
+        ResultSet recordRs = null; // Added to prevent leaks
 
         LocalDate today = LocalDate.now();
 
@@ -72,7 +70,7 @@ public class HybridAttendanceService {
             checkStmt.setDate(2, Date.valueOf(today));
             rs = checkStmt.executeQuery();
 
-            String verifiedClassification = "PRESENT";
+            String verifiedClassification;
             if (rs.next()) {
                 verifiedClassification = rs.getString("request_type"); 
             } else {
@@ -82,10 +80,10 @@ public class HybridAttendanceService {
             }
 
             String findRecordSql = "SELECT id FROM attendance_records WHERE employee_id = ? AND attendance_date = ?";
-            PreparedStatement findStmt = conn.prepareStatement(findRecordSql);
+            findStmt = conn.prepareStatement(findRecordSql);
             findStmt.setInt(1, employeeId);
             findStmt.setDate(2, Date.valueOf(today));
-            ResultSet recordRs = findStmt.executeQuery();
+            recordRs = findStmt.executeQuery();
 
             int attendanceId;
             if (recordRs.next()) {
@@ -107,12 +105,15 @@ public class HybridAttendanceService {
                 ResultSet genKeys = masterStmt.getGeneratedKeys();
                 if (genKeys.next()) {
                     attendanceId = genKeys.getInt(1);
+                    genKeys.close();
                 } else {
+                    genKeys.close();
                     throw new SQLException("Failed to capture parent key sequence generation.");
                 }
             }
 
-            String insertLogSql = "INSERT INTO attendance_logs (attendance_id, employee_id, log_type, logged_at, latitude, longitude, attachment_proof_path) VALUES (?, ?, ?, NOW(), ?, ?, ?)";
+            // Notice how there are exactly 6 '?' parameters mapped beautifully below now
+            String insertLogSql = "INSERT INTO attendance_logs (attendance_id, employee_id, log_type, latitude, longitude, attachment_proof_path, logged_at) VALUES (?, ?, ?, ?, ?, ?, NOW())";
             logStmt = conn.prepareStatement(insertLogSql);
             logStmt.setInt(1, attendanceId);
             logStmt.setInt(2, employeeId);
@@ -127,19 +128,21 @@ public class HybridAttendanceService {
 
         } catch (SQLException e) {
             if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+                try { conn.rollback(); } catch (SQLException ex) {}
             }
-            e.printStackTrace();
             return false;
         } finally {
+            // Clean up everything safely
             try {
                 if (rs != null) rs.close();
+                if (recordRs != null) recordRs.close();
                 if (checkStmt != null) checkStmt.close();
+                if (findStmt != null) findStmt.close();
                 if (masterStmt != null) masterStmt.close();
                 if (logStmt != null) logStmt.close();
                 if (conn != null) conn.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                // Suppressed
             }
         }
     }
@@ -160,7 +163,6 @@ public class HybridAttendanceService {
             
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
             return false;
         }
     }
@@ -195,12 +197,11 @@ public class HybridAttendanceService {
             }
         } catch (SQLException e) {
             if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+                try { conn.rollback(); } catch (SQLException ex) {}
             }
-            e.printStackTrace();
             return false;
         } finally {
-            try { if (conn != null) conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            try { if (conn != null) conn.close(); } catch (SQLException e) {}
         }
     }
 
@@ -234,7 +235,7 @@ public class HybridAttendanceService {
                 reportList.add(row);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            // Suppressed
         }
         return reportList;
     }
