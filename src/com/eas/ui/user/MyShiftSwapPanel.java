@@ -1,7 +1,6 @@
 package com.eas.ui.user;
 
 import com.eas.model.UserSession;
-import com.eas.util.UITheme;
 import java.awt.*;
 import java.sql.*;
 import javax.swing.*;
@@ -87,13 +86,13 @@ public class MyShiftSwapPanel extends JPanel {
             }
 
             try (Connection conn = com.eas.config.Database.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(
-                     "INSERT INTO schedule_revision_history (original_employee_id, replacement_employee_id, schedule_id, reason, status, approved_by) VALUES (?, ?, 101, ?, 'PENDING', NULL)")) {
+                PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO shift_swaps (employee_id, target_employee_id, schedule_id, reason, status) VALUES (?, ?, 1, ?, 'PENDING')")) {
                 ps.setInt(1, currentEmployeeId);
                 ps.setInt(2, targetId);
                 ps.setString(3, reason);
                 ps.executeUpdate();
-                
+
                 JOptionPane.showMessageDialog(this, "Request submitted successfully!");
                 txtTargetEmployeeId.setText("");
                 txtReason.setText("");
@@ -110,15 +109,15 @@ public class MyShiftSwapPanel extends JPanel {
     public void refreshTableData() {
         tableModel.setRowCount(0);
         try (Connection conn = com.eas.config.Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                 "SELECT id, replacement_employee_id, reason, status FROM schedule_revision_history WHERE original_employee_id = ?")) {
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT id, target_employee_id, reason, status FROM shift_swaps WHERE employee_id = ?")) {
             ps.setInt(1, currentEmployeeId);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 tableModel.addRow(new Object[]{
-                    rs.getInt("id"), 
-                    rs.getInt("replacement_employee_id"), 
-                    rs.getString("reason"), 
+                    rs.getInt("id"),
+                    rs.getInt("target_employee_id"),
+                    rs.getString("reason"),
                     rs.getString("status")
                 });
             }
