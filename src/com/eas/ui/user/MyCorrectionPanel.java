@@ -66,12 +66,16 @@ public class MyCorrectionPanel extends UserTablePanel {
             "SELECT id, ?, ?, ?, ?, ? FROM employees WHERE user_id = ?";
 
         try (Connection c = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(sql)) {
+            PreparedStatement p = c.prepareStatement(sql)) {
+
+            String correctionDate = date.getText().trim();
+            String clockIn  = correctionDate + " " + inTime.getText().trim();
+            String clockOut = correctionDate + " " + outTime.getText().trim();
 
             p.setString(1, attendanceId.getText().trim());
-            p.setString(2, date.getText().trim());
-            p.setString(3, inTime.getText().trim());
-            p.setString(4, outTime.getText().trim());
+            p.setString(2, correctionDate);
+            p.setString(3, clockIn);
+            p.setString(4, clockOut);
             p.setString(5, reason.getText().trim());
             p.setInt(6, session.getId());
             p.executeUpdate();
