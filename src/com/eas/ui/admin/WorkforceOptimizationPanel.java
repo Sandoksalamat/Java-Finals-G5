@@ -86,20 +86,23 @@ public class WorkforceOptimizationPanel extends JPanel {
     }
 
     private void updateStaffingStatus() {
-        // Assume Dept 2, Shift 1 for current date monitoring
         boolean isUnderstaffed = schedulingService.isUnderstaffed(2, 1, dateField.getText());
         if (isUnderstaffed) {
             staffingStatusLabel.setText("STATUS: UNDERSTAFFED - Needs Volunteers!");
             staffingStatusLabel.setForeground(Color.RED);
         } else {
             staffingStatusLabel.setText("STATUS: FULL COVERAGE");
-            staffingStatusLabel.setForeground(new Color(0, 153, 0)); // Dark Green
+            staffingStatusLabel.setForeground(new Color(0, 153, 0));
         }
     }
 
     public void loadSwapRequests() {
         swapModel.setRowCount(0);
-        String query = "SELECT id, employee_id, target_employee_id, reason, status FROM shift_swaps WHERE status IN ('PENDING', 'PENDING_VOLUNTEER')";
+        // Load both Shift Swaps and Volunteer Requests
+        String query = "SELECT id, employee_id, target_employee_id, reason, status FROM shift_swaps WHERE status = 'PENDING' " +
+                       "UNION ALL " +
+                       "SELECT id, employee_id, 0 as target_employee_id, 'Volunteer Request' as reason, status FROM shift_assignments WHERE status = 'PENDING_VOLUNTEER'";
+        
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
@@ -119,21 +122,43 @@ public class WorkforceOptimizationPanel extends JPanel {
     private void handleApproval() {
         int row = swapTable.getSelectedRow();
         if (row == -1) { JOptionPane.showMessageDialog(this, "Select a request."); return; }
+        
         int id = Integer.parseInt(swapModel.getValueAt(row, 0).toString());
-        String reason = JOptionPane.showInputDialog(this, "Remarks:");
-        if (reason != null && schedulingService.approveShiftSwap(id, currentAdminId, reason)) {
-            refreshData();
+        String status = swapModel.getValueAt(row, 4).toString();
+        
+        if ("PENDING_VOLUNTEER".equals(status)) {
+            String updateSql = "UPDATE shift_assignments SET status = 'ASSIGNED' WHERE id = ?";
+            try (Connection conn = Database.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                ps.setInt(1, id);
+                ps.executeUpdate();
+                JOptionPane.showMessageDialog(this, "Volunteer assigned!");
+            } catch (SQLException e) { e.printStackTrace(); }
+        } else {
+            String reason = JOptionPane.showInputDialog(this, "Remarks:");
+            if (reason != null) schedulingService.approveShiftSwap(id, currentAdminId, reason);
         }
+        refreshData();
     }
 
     private void handleRejection() {
         int row = swapTable.getSelectedRow();
         if (row == -1) return;
         int id = Integer.parseInt(swapModel.getValueAt(row, 0).toString());
-        String reason = JOptionPane.showInputDialog(this, "Remarks:");
-        if (reason != null && schedulingService.rejectShiftSwap(id, currentAdminId, reason)) {
-            refreshData();
+        String status = swapModel.getValueAt(row, 4).toString();
+
+        if ("PENDING_VOLUNTEER".equals(status)) {
+            String updateSql = "UPDATE shift_assignments SET status = 'REJECTED' WHERE id = ?";
+            try (Connection conn = Database.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                ps.setInt(1, id);
+                ps.executeUpdate();
+            } catch (SQLException e) { e.printStackTrace(); }
+        } else {
+            String reason = JOptionPane.showInputDialog(this, "Remarks:");
+            if (reason != null) schedulingService.rejectShiftSwap(id, currentAdminId, reason);
         }
+        refreshData();
     }
 
     private void handleAssignment() {
