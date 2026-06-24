@@ -12,6 +12,7 @@ public class WorkforceOptimizationPanel extends JPanel {
     private JTable swapTable, historyTable, empTable;
     private DefaultTableModel swapModel, historyModel, empModel;
     private JTextField dateField = new JTextField("2026-06-25");
+    private JLabel staffingStatusLabel = new JLabel("STATUS: Checking...");
     private int currentAdminId;
     private SchedulingService schedulingService;
 
@@ -28,7 +29,7 @@ public class WorkforceOptimizationPanel extends JPanel {
     private void initUI() {
         JTabbedPane tabbedPane = new JTabbedPane();
 
-        // Pending Requests Panel
+        // 1. Pending Requests & Volunteers Panel
         JPanel swapPanel = new JPanel(new BorderLayout(5, 5));
         swapModel = new DefaultTableModel(new Object[]{"ID", "Emp ID", "Target ID", "Reason", "Status"}, 0);
         swapTable = new JTable(swapModel);
@@ -45,13 +46,14 @@ public class WorkforceOptimizationPanel extends JPanel {
         actionPanel.add(approveButton);
         swapPanel.add(actionPanel, BorderLayout.SOUTH);
 
-        // Revision History Panel
-        JPanel historyPanel = new JPanel(new BorderLayout());
-        historyModel = new DefaultTableModel(new Object[]{"ID", "Orig ID", "Repl ID", "Reason", "Status", "Admin ID"}, 0);
-        historyTable = new JTable(historyModel);
-        historyPanel.add(new JScrollPane(historyTable), BorderLayout.CENTER);
+        // 2. Workforce Optimization / Staffing Monitoring Panel
+        JPanel monitorPanel = new JPanel(new BorderLayout());
+        JPanel statusTop = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        staffingStatusLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        statusTop.add(staffingStatusLabel);
+        monitorPanel.add(statusTop, BorderLayout.NORTH);
 
-        // Reliever Assignment Panel
+        // 3. Reliever Assignment Panel
         JPanel relieverPanel = new JPanel(new BorderLayout(5, 5));
         empModel = new DefaultTableModel(new Object[]{"ID", "Name"}, 0);
         empTable = new JTable(empModel);
@@ -70,40 +72,39 @@ public class WorkforceOptimizationPanel extends JPanel {
         relieverPanel.add(new JScrollPane(empTable), BorderLayout.CENTER);
         relieverPanel.add(assignBtn, BorderLayout.SOUTH);
 
-        tabbedPane.addTab("Pending Requests", swapPanel);
-        tabbedPane.addTab("Schedule Revision History", historyPanel);
+        tabbedPane.addTab("Requests & Volunteers", swapPanel);
+        tabbedPane.addTab("Staffing Monitor", monitorPanel);
         tabbedPane.addTab("Assign Reliever", relieverPanel);
 
         add(tabbedPane, BorderLayout.CENTER);
     }
 
-    // --- MGA METHODS NA NAGKAKA-ERROR ---
     public void refreshData() {
         loadSwapRequests();
-        loadRevisionHistory();
         loadAvailableEmployees();
+        updateStaffingStatus();
+    }
+
+    private void updateStaffingStatus() {
+        // Assume Dept 2, Shift 1 for current date monitoring
+        boolean isUnderstaffed = schedulingService.isUnderstaffed(2, 1, dateField.getText());
+        if (isUnderstaffed) {
+            staffingStatusLabel.setText("STATUS: UNDERSTAFFED - Needs Volunteers!");
+            staffingStatusLabel.setForeground(Color.RED);
+        } else {
+            staffingStatusLabel.setText("STATUS: FULL COVERAGE");
+            staffingStatusLabel.setForeground(new Color(0, 153, 0)); // Dark Green
+        }
     }
 
     public void loadSwapRequests() {
         swapModel.setRowCount(0);
-        String query = "SELECT id, employee_id, target_employee_id, reason FROM shift_swaps WHERE status = 'PENDING'";
+        String query = "SELECT id, employee_id, target_employee_id, reason, status FROM shift_swaps WHERE status IN ('PENDING', 'PENDING_VOLUNTEER')";
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                swapModel.addRow(new Object[]{rs.getInt("id"), rs.getInt("employee_id"), rs.getInt("target_employee_id"), rs.getString("reason"), "PENDING"});
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
-    }
-
-    public void loadRevisionHistory() {
-        historyModel.setRowCount(0);
-        String query = "SELECT id, original_employee_id, replacement_employee_id, reason, approved_by FROM schedule_revision_history";
-        try (Connection conn = Database.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                historyModel.addRow(new Object[]{rs.getInt("id"), rs.getInt("original_employee_id"), rs.getInt("replacement_employee_id"), rs.getString("reason"), "APPROVED", rs.getInt("approved_by")});
+                swapModel.addRow(new Object[]{rs.getInt("id"), rs.getInt("employee_id"), rs.getInt("target_employee_id"), rs.getString("reason"), rs.getString("status")});
             }
         } catch (SQLException e) { e.printStackTrace(); }
     }
@@ -140,8 +141,8 @@ public class WorkforceOptimizationPanel extends JPanel {
         if (row == -1) { JOptionPane.showMessageDialog(this, "Select an employee."); return; }
         int empId = Integer.parseInt(empModel.getValueAt(row, 0).toString());
         if (schedulingService.assignReliever(empId, 1, dateField.getText())) {
-            JOptionPane.showMessageDialog(this, "Assigned!");
-            loadAvailableEmployees();
+            JOptionPane.showMessageDialog(this, "Assigned successfully!");
+            refreshData();
         }
     }
 }
