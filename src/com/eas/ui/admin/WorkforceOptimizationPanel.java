@@ -1,29 +1,28 @@
 package com.eas.ui.admin;
 
 import com.eas.config.Database;
+import com.eas.service.SchedulingService;
 import java.awt.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 public class WorkforceOptimizationPanel extends JPanel {
 
-    private JTable swapTable, historyTable, coverageTable;
-    private DefaultTableModel swapModel, historyModel, coverageModel;
+    private JTable swapTable, historyTable, empTable;
+    private DefaultTableModel swapModel, historyModel, empModel;
+    private JTextField dateField = new JTextField("2026-06-25");
     private int currentAdminId;
+    private SchedulingService schedulingService;
 
     public WorkforceOptimizationPanel(int adminId) {
         this.currentAdminId = adminId;
+        this.schedulingService = new SchedulingService();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         initUI();
-        loadSwapRequests();
-        loadRevisionHistory();
-        loadCoverageReport();
+        refreshData();
     }
 
     private void initUI() {
@@ -38,30 +37,59 @@ public class WorkforceOptimizationPanel extends JPanel {
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton rejectButton = new JButton("Reject");
         JButton approveButton = new JButton("Approve");
+        
         approveButton.addActionListener(e -> handleApproval());
         rejectButton.addActionListener(e -> handleRejection());
+        
         actionPanel.add(rejectButton);
         actionPanel.add(approveButton);
         swapPanel.add(actionPanel, BorderLayout.SOUTH);
 
-        // Revision History Panel (Audit Trail)
+        // Revision History Panel
         JPanel historyPanel = new JPanel(new BorderLayout());
         historyModel = new DefaultTableModel(new Object[]{"ID", "Orig ID", "Repl ID", "Reason", "Status", "Admin ID"}, 0);
         historyTable = new JTable(historyModel);
         historyPanel.add(new JScrollPane(historyTable), BorderLayout.CENTER);
 
+        // Reliever Assignment Panel
+        JPanel relieverPanel = new JPanel(new BorderLayout(5, 5));
+        empModel = new DefaultTableModel(new Object[]{"ID", "Name"}, 0);
+        empTable = new JTable(empModel);
+        
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filterPanel.add(new JLabel("Date:"));
+        filterPanel.add(dateField);
+        JButton searchBtn = new JButton("Find Available");
+        searchBtn.addActionListener(e -> loadAvailableEmployees());
+        filterPanel.add(searchBtn);
+        
+        JButton assignBtn = new JButton("Assign as Reliever");
+        assignBtn.addActionListener(e -> handleAssignment());
+        
+        relieverPanel.add(filterPanel, BorderLayout.NORTH);
+        relieverPanel.add(new JScrollPane(empTable), BorderLayout.CENTER);
+        relieverPanel.add(assignBtn, BorderLayout.SOUTH);
+
         tabbedPane.addTab("Pending Requests", swapPanel);
         tabbedPane.addTab("Schedule Revision History", historyPanel);
+        tabbedPane.addTab("Assign Reliever", relieverPanel);
 
         add(tabbedPane, BorderLayout.CENTER);
+    }
+
+    // --- MGA METHODS NA NAGKAKA-ERROR ---
+    public void refreshData() {
+        loadSwapRequests();
+        loadRevisionHistory();
+        loadAvailableEmployees();
     }
 
     public void loadSwapRequests() {
         swapModel.setRowCount(0);
         String query = "SELECT id, employee_id, target_employee_id, reason FROM shift_swaps WHERE status = 'PENDING'";
         try (Connection conn = Database.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(query);
-            ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 swapModel.addRow(new Object[]{rs.getInt("id"), rs.getInt("employee_id"), rs.getInt("target_employee_id"), rs.getString("reason"), "PENDING"});
             }
@@ -72,43 +100,28 @@ public class WorkforceOptimizationPanel extends JPanel {
         historyModel.setRowCount(0);
         String query = "SELECT id, original_employee_id, replacement_employee_id, reason, approved_by FROM schedule_revision_history";
         try (Connection conn = Database.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(query);
-            ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 historyModel.addRow(new Object[]{rs.getInt("id"), rs.getInt("original_employee_id"), rs.getInt("replacement_employee_id"), rs.getString("reason"), "APPROVED", rs.getInt("approved_by")});
             }
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
+    public void loadAvailableEmployees() {
+        empModel.setRowCount(0);
+        for (String[] emp : schedulingService.getAvailableEmployees(dateField.getText())) {
+            empModel.addRow(emp);
+        }
+    }
+
     private void handleApproval() {
         int row = swapTable.getSelectedRow();
-        if (row == -1) return;
+        if (row == -1) { JOptionPane.showMessageDialog(this, "Select a request."); return; }
         int id = Integer.parseInt(swapModel.getValueAt(row, 0).toString());
-        int empId = Integer.parseInt(swapModel.getValueAt(row, 1).toString());
-        int targetId = Integer.parseInt(swapModel.getValueAt(row, 2).toString());
-        String reason = swapModel.getValueAt(row, 3).toString();
-
-        try (Connection conn = Database.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "UPDATE shift_swaps SET status = 'APPROVED' WHERE id = ?")) {
-                ps.setInt(1, id);
-                ps.executeUpdate();
-            }
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO schedule_revision_history (schedule_id, original_employee_id, replacement_employee_id, reason, approved_by) VALUES (1, ?, ?, ?, ?)")) {
-                ps.setInt(1, empId);
-                ps.setInt(2, targetId);
-                ps.setString(3, reason);
-                ps.setInt(4, currentAdminId);
-                ps.executeUpdate();
-            }
-            loadSwapRequests();
-            loadRevisionHistory();
-            JOptionPane.showMessageDialog(this, "Approved!");
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+        String reason = JOptionPane.showInputDialog(this, "Remarks:");
+        if (reason != null && schedulingService.approveShiftSwap(id, currentAdminId, reason)) {
+            refreshData();
         }
     }
 
@@ -116,18 +129,19 @@ public class WorkforceOptimizationPanel extends JPanel {
         int row = swapTable.getSelectedRow();
         if (row == -1) return;
         int id = Integer.parseInt(swapModel.getValueAt(row, 0).toString());
-        try (Connection conn = Database.getConnection();
-            PreparedStatement ps = conn.prepareStatement("UPDATE shift_swaps SET status = 'REJECTED' WHERE id = ?")) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
-            loadSwapRequests();
-            JOptionPane.showMessageDialog(this, "Rejected!");
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+        String reason = JOptionPane.showInputDialog(this, "Remarks:");
+        if (reason != null && schedulingService.rejectShiftSwap(id, currentAdminId, reason)) {
+            refreshData();
         }
     }
 
-    public void loadCoverageReport() { /* Keep existing */ }
+    private void handleAssignment() {
+        int row = empTable.getSelectedRow();
+        if (row == -1) { JOptionPane.showMessageDialog(this, "Select an employee."); return; }
+        int empId = Integer.parseInt(empModel.getValueAt(row, 0).toString());
+        if (schedulingService.assignReliever(empId, 1, dateField.getText())) {
+            JOptionPane.showMessageDialog(this, "Assigned!");
+            loadAvailableEmployees();
+        }
+    }
 }
