@@ -1,10 +1,10 @@
 
 package com.eas.ui.admin;
 
-import com.eas.auth.LoginFrame; 
-import com.eas.model.UserSession; 
-import com.eas.service.AuditService; 
-import com.eas.util.UITheme; 
+import com.eas.auth.LoginFrame;
+import com.eas.model.UserSession;
+import com.eas.service.AuditService;
+import com.eas.util.UITheme;
 import java.awt.*; 
 import javax.swing.*;
 
@@ -64,6 +64,12 @@ public class AdminDashboardFrame extends JFrame {
         t.addTab("Adjustments",crud("Payroll Adjustments","ADJUSTMENTS","SELECT id,payroll_period_id,employee_id,adjustment_type,amount,description,created_at FROM payslip_adjustments ORDER BY id DESC","SELECT id,payroll_period_id,employee_id,adjustment_type,amount,description,created_at FROM payslip_adjustments WHERE adjustment_type LIKE ? OR description LIKE ? OR CAST(employee_id AS CHAR) LIKE ?","adjustments","INSERT INTO payslip_adjustments(payroll_period_id,employee_id,adjustment_type,amount,description) VALUES(?,?,?,?,?)","UPDATE payslip_adjustments SET payroll_period_id=?,employee_id=?,adjustment_type=?,amount=?,description=? WHERE id=?","DELETE FROM payslip_adjustments WHERE id=?","Period ID","Employee ID","Type","Amount","Description"));
         t.addTab("Announcements",crud("Announcements","ANNOUNCEMENTS","SELECT id,title,content,target_audience,posted_by,valid_until,status FROM announcements ORDER BY id DESC","SELECT id,title,content,target_audience,posted_by,valid_until,status FROM announcements WHERE title LIKE ? OR target_audience LIKE ? OR status LIKE ?","announcements","INSERT INTO announcements(title,content,target_audience,posted_by,valid_until,status) VALUES(?,?,?,?,?,?)","UPDATE announcements SET title=?,content=?,target_audience=?,posted_by=?,valid_until=?,status=? WHERE id=?","DELETE FROM announcements WHERE id=?","Title","Content","Audience","Posted By ID","Valid Until","Status"));
         t.addTab("Messages",new AdminMessagePanel(s));
+        t.addTab("Health & Safety",   new HealthSafetyPanel(s));
+        t.addTab("Medical Exam",   new MedicalExamPanel(s));
+        t.addTab("RTW Clearance",   new ReturnToWorkPanel(s));
+        t.addTab("Sick Monitoring",   new SickMonitoringPanel(s));
+        t.addTab("Wellness Program",   new WellnessProgramPanel(s));
+        t.addTab("Safety Checklists",   new SafetyChecklistReviewPanel(s));
         t.addTab("Reports",new ReportsPanel());
         t.addTab("Audit Trail",new ReadOnlyQueryPanel("System Audit Logs","SELECT a.id,u.username,a.action_type,a.module_name,a.description,a.logged_at FROM audit_logs a LEFT JOIN users u ON a.user_id=u.id ORDER BY a.id DESC","SELECT a.id,u.username,a.action_type,a.module_name,a.description,a.logged_at FROM audit_logs a LEFT JOIN users u ON a.user_id=u.id WHERE u.username LIKE ? OR a.module_name LIKE ? OR a.description LIKE ? ORDER BY a.id DESC","audit_logs"));
         

@@ -84,8 +84,8 @@ public class OffSiteRequestPanel extends JPanel {
         JButton timeInBtn = new JButton("Remote TIME IN");
         JButton timeOutBtn = new JButton("Remote TIME OUT");
 
-        timeInBtn.setBackground(new Color(46, 139, 87)); timeInBtn.setForeground(Color.BLACK);
-        timeOutBtn.setBackground(new Color(178, 34, 34)); timeOutBtn.setForeground(Color.BLACK);
+        timeInBtn.setBackground(new Color(46, 139, 87)); timeInBtn.setForeground(Color.WHITE);
+        timeOutBtn.setBackground(new Color(178, 34, 34)); timeOutBtn.setForeground(Color.WHITE);
 
         gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Latitude:"), gbc);
         gbc.gridx = 1; panel.add(latField, gbc);
@@ -159,20 +159,15 @@ public class OffSiteRequestPanel extends JPanel {
     try {
         double lat = Double.parseDouble(latField.getText().trim());
         double lng = Double.parseDouble(lngField.getText().trim());
-
+        
         boolean success = service.processMobileClockEvent(currentUserId, logType, lat, lng, null);
         if (success) {
             JOptionPane.showMessageDialog(this, "Remote coordinate transaction log established for: " + logType);
         } else {
-            JOptionPane.showMessageDialog(this, "TESTING 123 - if you see this exact text, the rebuild worked.", "Access Denied", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Transaction Rejected: Ensure you have an active APPROVED offsite application for today.", "Access Denied", JOptionPane.WARNING_MESSAGE);
         }
-    } catch (com.eas.service.HybridAttendanceService.ClockRejectedException ex) {
-        JOptionPane.showMessageDialog(this, ex.getMessage(), "Access Denied - Diagnostic", JOptionPane.WARNING_MESSAGE);
     } catch (NumberFormatException e) {
         JOptionPane.showMessageDialog(this, "Invalid coordinates format. Please check Latitude and Longitude values.", "Input Error", JOptionPane.ERROR_MESSAGE);
-    } catch (Exception ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Unexpected error: " + ex.getClass().getSimpleName() + " - " + ex.getMessage(), "Unhandled Error", JOptionPane.ERROR_MESSAGE);
     }
 }
 

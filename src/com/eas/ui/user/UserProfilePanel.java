@@ -14,9 +14,6 @@ import javax.swing.*;
 // Wellness program
 // Sick Employee monitoring
 // Pre-Employment & Annual med exam record
-
-//== Incomplete ==
-// Occupational Safety Checklist
 public class UserProfilePanel extends JPanel {
 
     private final UserSession session;
@@ -92,7 +89,7 @@ public class UserProfilePanel extends JPanel {
         mednote.setWrapStyleWord(true);
 
         JPanel p = new JPanel(new GridBagLayout());
-        p.setBorder(BorderFactory.createTitledBorder("Employee Medical Details")); // FIX 1: border stays on p, not overwritten
+        p.setBorder(BorderFactory.createTitledBorder("Employee Medical Details"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 8, 6, 8);
         gbc.fill   = GridBagConstraints.HORIZONTAL;
@@ -169,7 +166,7 @@ public class UserProfilePanel extends JPanel {
 
         // ── Occupational Safety Checklist ─────────────────────────────────
         JPanel cb = new JPanel(new GridBagLayout());
-        cb.setBorder(BorderFactory.createTitledBorder("Occupational Safety Checklist")); // FIX 1: border correctly set on cb
+        cb.setBorder(BorderFactory.createTitledBorder("Occupational Safety Checklist"));
 
         GridBagConstraints gbc2 = new GridBagConstraints();
         gbc2.insets = new Insets(6, 8, 6, 8);
@@ -178,7 +175,7 @@ public class UserProfilePanel extends JPanel {
 
         int row2 = 0;
 
-        // Department selector — FIX 5: added to cb first, at the top, with gbc2
+        // Department selector
         JLabel dept_selector = new JLabel("Select Department:");
         String[] dept_Options = {"-Select-", "Office", "Laboratory", "Warehouse"};
         JComboBox<String> dept_dropdown = new JComboBox<>(dept_Options);
@@ -190,7 +187,7 @@ public class UserProfilePanel extends JPanel {
         gbc2.gridwidth = 1;
         row2++;
 
-        // Placeholder panel for the dynamic checklist items
+        // Container for the dynamic checklist items
         JPanel checklistItems = new JPanel(new GridBagLayout());
         gbc2.gridx = 0; gbc2.gridy = row2;
         gbc2.gridwidth = 3; gbc2.weightx = 1;
@@ -198,9 +195,19 @@ public class UserProfilePanel extends JPanel {
         gbc2.gridwidth = 1;
         row2++;
 
+        // Status label — confirms last save, shown under the checklist
+        JLabel checklistStatus = new JLabel(" ");
+        checklistStatus.setFont(new Font("SansSerif", Font.ITALIC, 11));
+        checklistStatus.setForeground(Color.GRAY);
+        gbc2.gridx = 0; gbc2.gridy = row2;
+        gbc2.gridwidth = 3;
+        cb.add(checklistStatus, gbc2);
+        gbc2.gridwidth = 1;
+        row2++;
+
         // Save checklist button
         JButton saveChecklist = UITheme.button("SAVE CHECKLIST");
-        gbc2.gridx = 0; gbc2.gridy = row2; // FIX 3: use gbc2.gridy, not gbc.gridy
+        gbc2.gridx = 0; gbc2.gridy = row2;
         gbc2.gridwidth = 3;
         gbc2.anchor = GridBagConstraints.CENTER;
         gbc2.fill   = GridBagConstraints.NONE;
@@ -209,43 +216,30 @@ public class UserProfilePanel extends JPanel {
         gbc2.fill = GridBagConstraints.HORIZONTAL;
         gbc2.anchor = GridBagConstraints.WEST;
 
-        // FIX 2: ActionListener — rebuilds checklist items reactively on selection change
+        // Rebuilds checklist items for the selected department and loads any
+        // previously saved checked state for this employee from the database.
         dept_dropdown.addActionListener(e -> {
             checklistItems.removeAll();
+            checklistStatus.setText(" ");
 
             String selected = (String) dept_dropdown.getSelectedItem();
-            GridBagConstraints ic = new GridBagConstraints();
-            ic.insets = new Insets(4, 8, 4, 8);
-            ic.fill   = GridBagConstraints.HORIZONTAL;
-            ic.anchor = GridBagConstraints.WEST;
-            ic.gridx  = 0;
-            int r = 0;
-
-            if ("Office".equals(selected)) {
-                ic.gridy = r++; checklistItems.add(new JLabel("Office Checklist"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("Ergonomic workstation setup completed"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("Emergency exits identified"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("Fire extinguisher location noted"), ic);
-
-            } else if ("Laboratory".equals(selected)) {
-                ic.gridy = r++; checklistItems.add(new JLabel("Laboratory Checklist"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("PPE worn before entering lab"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("Chemical storage labels verified"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("Eyewash station accessible"), ic);
-
-            } else if ("Warehouse".equals(selected)) {
-                ic.gridy = r++; checklistItems.add(new JLabel("Warehouse Checklist"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("Forklift path clear of obstructions"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("Safety footwear worn"), ic);
-                ic.gridy = r++; checklistItems.add(new JCheckBox("Load limits on shelving checked"), ic);
-            }
+            buildChecklistItems(checklistItems, selected);
+            loadChecklistState(checklistItems, selected);
 
             checklistItems.revalidate();
             checklistItems.repaint();
         });
 
+        saveChecklist.addActionListener(e -> {
+            String selected = (String) dept_dropdown.getSelectedItem();
+            if (selected == null || "-Select-".equals(selected)) {
+                Dialogs.error(this, "Please select a department before saving the checklist.");
+                return;
+            }
+            saveChecklistState(checklistItems, selected, checklistStatus);
+        });
+
         // ── Assemble center panel ─────────────────────────────────────────
-        // FIX 4: cb is now added to the layout inside a wrapper so all panels appear
         JPanel medAndChecklist = new JPanel(new BorderLayout(0, 10));
         medAndChecklist.add(p,  BorderLayout.NORTH);
         medAndChecklist.add(cb, BorderLayout.CENTER);
@@ -375,6 +369,132 @@ public class UserProfilePanel extends JPanel {
 
     private void setFileLabel(JLabel label, String path) {
         label.setText(path != null ? path : "No file selected");
+    }
+
+    // ── Occupational Safety Checklist helpers ───────────────────────────────
+
+    /** Master list of checklist item labels per department. Single source of truth
+     *  so build, load, and save all stay in sync with the same item text. */
+    private static final java.util.Map<String, String[]> CHECKLIST_ITEMS = java.util.Map.of(
+        "Office", new String[]{
+            "Ergonomic workstation setup completed",
+            "Emergency exits identified",
+            "Fire extinguisher location noted"
+        },
+        "Laboratory", new String[]{
+            "PPE worn before entering lab",
+            "Chemical storage labels verified",
+            "Eyewash station accessible"
+        },
+        "Warehouse", new String[]{
+            "Forklift path clear of obstructions",
+            "Safety footwear worn",
+            "Load limits on shelving checked"
+        }
+    );
+
+    /** Builds the JCheckBox rows for the selected department into the given container. */
+    private void buildChecklistItems(JPanel checklistItems, String department) {
+        String[] items = CHECKLIST_ITEMS.get(department);
+        if (items == null) return; // "-Select-" or unknown
+
+        GridBagConstraints ic = new GridBagConstraints();
+        ic.insets = new Insets(4, 8, 4, 8);
+        ic.fill   = GridBagConstraints.HORIZONTAL;
+        ic.anchor = GridBagConstraints.WEST;
+        ic.gridx  = 0;
+        int r = 0;
+
+        ic.gridy = r++;
+        checklistItems.add(new JLabel(department + " Checklist"), ic);
+
+        for (String item : items) {
+            JCheckBox box = new JCheckBox(item);
+            box.setName(item); // used as the lookup key on save
+            ic.gridy = r++;
+            checklistItems.add(box, ic);
+        }
+    }
+
+    /** Loads this employee's previously saved checked state for the department
+     *  and applies it to the JCheckBox components just built by buildChecklistItems. */
+    private void loadChecklistState(JPanel checklistItems, String department) {
+        if (!CHECKLIST_ITEMS.containsKey(department)) return;
+
+        String sql =
+            "SELECT item_label, is_checked " +
+            "FROM safety_checklist_records sc " +
+            "JOIN employees e ON sc.employee_id = e.id " +
+            "WHERE e.user_id = ? AND sc.department_type = ?";
+
+        java.util.Map<String, Boolean> saved = new java.util.HashMap<>();
+
+        try (Connection c = Database.getConnection();
+             PreparedStatement p = c.prepareStatement(sql)) {
+
+            p.setInt(1, session.getId());
+            p.setString(2, department);
+
+            try (ResultSet rs = p.executeQuery()) {
+                while (rs.next()) {
+                    saved.put(rs.getString("item_label"), rs.getBoolean("is_checked"));
+                }
+            }
+
+        } catch (Exception ex) {
+            Dialogs.error(this, ex.getMessage());
+            return;
+        }
+
+        for (Component comp : checklistItems.getComponents()) {
+            if (comp instanceof JCheckBox box) {
+                Boolean checked = saved.get(box.getName());
+                if (checked != null) box.setSelected(checked);
+            }
+        }
+    }
+
+    /** Persists the current checkbox states for the selected department. Uses
+     *  INSERT ... ON DUPLICATE KEY UPDATE so re-saving simply updates is_checked. */
+    private void saveChecklistState(JPanel checklistItems, String department, JLabel statusLabel) {
+        String sql =
+            "INSERT INTO safety_checklist_records " +
+            "  (employee_id, department_type, item_label, is_checked) " +
+            "VALUES ((SELECT id FROM employees WHERE user_id = ?), ?, ?, ?) " +
+            "ON DUPLICATE KEY UPDATE is_checked = VALUES(is_checked)";
+
+        try (Connection c = Database.getConnection();
+             PreparedStatement p = c.prepareStatement(sql)) {
+
+            boolean any = false;
+            for (Component comp : checklistItems.getComponents()) {
+                if (comp instanceof JCheckBox box) {
+                    p.setInt(1, session.getId());
+                    p.setString(2, department);
+                    p.setString(3, box.getName());
+                    p.setBoolean(4, box.isSelected());
+                    p.executeUpdate();
+                    any = true;
+                }
+            }
+
+            if (!any) {
+                Dialogs.error(this, "No checklist items to save for this department.");
+                return;
+            }
+
+            AuditService.log(session.getId(), "UPDATE", "SAFETY_CHECKLIST",
+                "Saved " + department + " safety checklist.");
+
+            statusLabel.setForeground(new Color(0, 128, 0));
+            statusLabel.setText("Checklist saved at " +
+                java.time.LocalTime.now().withNano(0));
+
+            Dialogs.info(this, "Safety checklist saved.");
+
+        } catch (Exception ex) {
+            Dialogs.error(this, ex.getMessage());
+        }
     }
 
 /** Returns null when the user hasn't picked a file yet. */

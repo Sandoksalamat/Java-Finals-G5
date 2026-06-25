@@ -113,42 +113,20 @@ public class OffSiteApprovalPanel extends JPanel {
         modelRequests.setRowCount(0);
         modelVerify.setRowCount(0);
         try (Connection conn = Database.getConnection()) {
-            try (Statement st1 = conn.createStatement();
-                 ResultSet rs1 = st1.executeQuery(
-                     "SELECT id, employee_id, request_type, start_date, end_date, " +
-                     "destination_or_location, status FROM offsite_requests WHERE status='PENDING'")) {
-                while (rs1.next()) {
-                   modelRequests.addRow(new Object[]{
-    rs1.getInt("id"),
-    rs1.getString("request_type"),
-    rs1.getString("employee_id"),
-    rs1.getString("employee_id"),
-    rs1.getDate("start_date"),
-    rs1.getDate("end_date"),
-    rs1.getString("destination_or_location"),
-    rs1.getString("status"),
-    rs1.getString("status")
-});
-                }
+
+            Statement st1 = conn.createStatement();
+            ResultSet rs1 = st1.executeQuery("SELECT id, employee_id, request_type, start_date, end_date, destination_or_location, status FROM offsite_requests WHERE status='PENDING'");
+            while (rs1.next()) {
+                modelRequests.addRow(new Object[]{rs1.getInt("id"), rs1.getInt("employee_id"), rs1.getString("request_type"), rs1.getDate("start_date"), rs1.getDate("end_date"), rs1.getString("destination_or_location"), rs1.getString("status")});
             }
-            try (Statement st2 = conn.createStatement();
-                 ResultSet rs2 = st2.executeQuery(
-                     "SELECT employee_id, attendance_date, accomplishment_text, document_path, " +
-                     "verification_status FROM offsite_accomplishments WHERE verification_status='PENDING'")) {
-                while (rs2.next()) {
-                    modelVerify.addRow(new Object[]{
-                        rs2.getString("employee_id"),
-                        rs2.getDate("attendance_date"),
-                        rs2.getString("accomplishment_text"),
-                        rs2.getString("document_path"),
-                        rs2.getString("verification_status")
-                    });
-                }
+
+            Statement st2 = conn.createStatement();
+            ResultSet rs2 = st2.executeQuery("SELECT employee_id, attendance_date, accomplishment_text, document_path, verification_status FROM offsite_accomplishments WHERE verification_status='PENDING'");
+            while (rs2.next()) {
+                modelVerify.addRow(new Object[]{rs2.getInt("employee_id"), rs2.getDate("attendance_date"), rs2.getString("accomplishment_text"), rs2.getString("document_path"), rs2.getString("verification_status")});
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Failed to load data: " + e.getMessage(),
-                "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

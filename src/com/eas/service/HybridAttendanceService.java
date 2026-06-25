@@ -62,10 +62,6 @@ public class HybridAttendanceService {
         }
     }
 
-    public static class ClockRejectedException extends RuntimeException {
-        public ClockRejectedException(String message) { super(message); }
-    }
-
     public boolean processMobileClockEvent(int userId, String logType, Double latitude, Double longitude, String attachmentPath) {
         Connection conn = null;
         PreparedStatement checkStmt = null;
@@ -78,28 +74,7 @@ public class HybridAttendanceService {
             conn = Database.getConnection();
             conn.setAutoCommit(false);
 
-            // Surface exactly what the DB connection thinks "today" is, and what schema it's hitting.
-            String dbNow = "unknown", dbSchema = "unknown";
-            try (Statement diag = conn.createStatement();
-                 ResultSet diagRs = diag.executeQuery("SELECT CURDATE(), DATABASE()")) {
-                if (diagRs.next()) {
-                    dbNow = diagRs.getString(1);
-                    dbSchema = diagRs.getString(2);
-                }
-            }
-
-            int employeeId;
-            try {
-                employeeId = resolveEmployeeId(conn, userId);
-            } catch (SQLException ex) {
-                conn.rollback();
-                throw new ClockRejectedException(
-                    "No ACTIVE employee row found for logged-in userId=" + userId
-                    + " (checked schema='" + dbSchema + "'). "
-                    + "This means the employees.user_id column doesn't have a row matching this login, "
-                    + "or employment_status isn't 'ACTIVE'."
-                );
-            }
+            int employeeId = resolveEmployeeId(conn, userId);
             String employeeIdStr = String.valueOf(employeeId);
 
             String checkApprovalSql = "SELECT request_type FROM offsite_requests WHERE employee_id = ? AND CURDATE() BETWEEN start_date AND end_date AND status = 'APPROVED' LIMIT 1";
@@ -110,14 +85,9 @@ public class HybridAttendanceService {
             if (rs.next()) {
                 verifiedClassification = rs.getString("request_type");
             } else {
+                System.out.println("Clocking rejected: No approved off-site request found today for employee_id=" + employeeIdStr);
                 conn.rollback();
-                throw new ClockRejectedException(
-                    "No APPROVED offsite_requests row covers today for employee_id=" + employeeIdStr
-                    + " (resolved from userId=" + userId + "). "
-                    + "DB connection's CURDATE()=" + dbNow + ", schema='" + dbSchema + "'. "
-                    + "Check that an offsite_requests row exists with this exact employee_id, "
-                    + "status='APPROVED', and start_date <= " + dbNow + " <= end_date in THIS schema."
-                );
+                return false;
             }
 
             // FIX: SQL now uses CURDATE() directly, so the second '?' placeholder
@@ -169,11 +139,7 @@ public class HybridAttendanceService {
             if (conn != null) {
                 try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
             }
-            throw new ClockRejectedException(
-                "SQLException in processMobileClockEvent: " + e.getClass().getSimpleName()
-                + " - " + e.getMessage()
-                + " (SQLState=" + e.getSQLState() + ", ErrorCode=" + e.getErrorCode() + ")"
-            );
+            return false;
         } finally {
             try {
                 if (rs != null) rs.close();

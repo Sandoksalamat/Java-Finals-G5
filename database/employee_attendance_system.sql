@@ -1,10 +1,14 @@
--- GR 5: EMPLOYEE ATTENDANCE SYSTEM
--- MySQL / XAMPP Database Script
-
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Jun 23, 2026 at 05:28 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 DROP DATABASE IF EXISTS employee_attendance_system;
 CREATE DATABASE employee_attendance_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE employee_attendance_system;
-
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -76,6 +80,13 @@ CREATE TABLE `attendance_corrections` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
+-- Dumping data for table `attendance_corrections`
+--
+
+INSERT INTO `attendance_corrections` (`id`, `employee_id`, `attendance_id`, `correction_date`, `requested_clock_in`, `requested_clock_out`, `reason`, `status`, `reviewed_by`, `reviewed_at`, `admin_remarks`) VALUES
+(1, 2, 6, '2026-06-23', '2026-06-23 10:30:30', '2026-06-23 09:40:10', '', 'APPROVED', 1, '2026-06-23 10:54:45', '');
+
+--
 -- Triggers `attendance_corrections`
 --
 DELIMITER $$
@@ -124,19 +135,26 @@ CREATE TABLE `attendance_logs` (
   `log_type` enum('TIME_IN','TIME_OUT','ADJUSTMENT') NOT NULL,
   `logged_at` datetime NOT NULL,
   `device_id` int(11) DEFAULT NULL,
-  `notes` varchar(255) DEFAULT NULL
+  `notes` varchar(255) DEFAULT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
+  `attachment_proof_path` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `attendance_logs`
 --
 
-INSERT INTO `attendance_logs` (`id`, `attendance_id`, `employee_id`, `log_type`, `logged_at`, `device_id`, `notes`) VALUES
-(1, 1, 1, 'TIME_IN', '2026-06-09 20:25:51', NULL, ''),
-(2, 1, 1, 'TIME_OUT', '2026-06-09 20:27:02', NULL, ''),
-(3, 4, 1, 'TIME_IN', '2026-06-10 23:19:56', NULL, ''),
-(4, 4, 1, 'TIME_OUT', '2026-06-10 23:20:04', NULL, ''),
-(5, 5, 1, 'TIME_IN', '2026-06-11 15:05:57', NULL, '');
+INSERT INTO `attendance_logs` (`id`, `attendance_id`, `employee_id`, `log_type`, `logged_at`, `device_id`, `notes`, `latitude`, `longitude`, `attachment_proof_path`) VALUES
+(1, 1, 1, 'TIME_IN', '2026-06-09 20:25:51', NULL, '', NULL, NULL, NULL),
+(2, 1, 1, 'TIME_OUT', '2026-06-09 20:27:02', NULL, '', NULL, NULL, NULL),
+(3, 4, 1, 'TIME_IN', '2026-06-10 23:19:56', NULL, '', NULL, NULL, NULL),
+(4, 4, 1, 'TIME_OUT', '2026-06-10 23:20:04', NULL, '', NULL, NULL, NULL),
+(5, 5, 1, 'TIME_IN', '2026-06-11 15:05:57', NULL, '', NULL, NULL, NULL),
+(6, 6, 2, 'TIME_IN', '2026-06-23 00:01:33', NULL, '', NULL, NULL, NULL),
+(7, 6, 2, 'TIME_OUT', '2026-06-23 10:31:28', NULL, '', NULL, NULL, NULL),
+(8, 12, 1, 'TIME_IN', '2026-06-23 10:31:59', NULL, '', NULL, NULL, NULL),
+(9, 12, 1, 'TIME_OUT', '2026-06-23 10:32:01', NULL, '', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -156,19 +174,22 @@ CREATE TABLE `attendance_records` (
   `late_minutes` int(11) DEFAULT 0,
   `undertime_minutes` int(11) DEFAULT 0,
   `overtime_minutes` int(11) DEFAULT 0,
-  `attendance_status` enum('PRESENT','LATE','ABSENT','ON_LEAVE','REST_DAY','HOLIDAY','CORRECTED') DEFAULT 'PRESENT',
+  `attendance_status` enum('PRESENT','LATE','ABSENT','ON_LEAVE','REST_DAY','HOLIDAY','CORRECTED','WFH','OFFICIAL_BUSINESS','FIELD_ASSIGNMENT','TRAVEL_DUTY') DEFAULT 'PRESENT',
   `source` enum('MANUAL','BIOMETRIC','RFID','QR') DEFAULT 'MANUAL',
-  `remarks` varchar(255) DEFAULT NULL
+  `remarks` varchar(255) DEFAULT NULL,
+  `is_offsite_verified` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `attendance_records`
 --
 
-INSERT INTO `attendance_records` (`id`, `employee_id`, `attendance_date`, `shift_id`, `location_id`, `clock_in`, `clock_out`, `work_minutes`, `late_minutes`, `undertime_minutes`, `overtime_minutes`, `attendance_status`, `source`, `remarks`) VALUES
-(1, 1, '2026-06-09', 1, 1, '2026-06-09 20:25:51', '2026-06-09 20:27:02', 0, 735, 0, 207, 'LATE', 'MANUAL', ''),
-(4, 1, '2026-06-10', 1, 1, '2026-06-10 23:19:56', '2026-06-10 23:20:04', 0, 909, 0, 380, 'LATE', 'MANUAL', ''),
-(5, 1, '2026-06-11', 1, 1, '2026-06-11 15:05:57', NULL, 0, 415, 0, 0, 'LATE', 'MANUAL', '');
+INSERT INTO `attendance_records` (`id`, `employee_id`, `attendance_date`, `shift_id`, `location_id`, `clock_in`, `clock_out`, `work_minutes`, `late_minutes`, `undertime_minutes`, `overtime_minutes`, `attendance_status`, `source`, `remarks`, `is_offsite_verified`) VALUES
+(1, 1, '2026-06-09', 1, 1, '2026-06-09 20:25:51', '2026-06-09 20:27:02', 0, 735, 0, 207, 'LATE', 'MANUAL', '', 0),
+(4, 1, '2026-06-10', 1, 1, '2026-06-10 23:19:56', '2026-06-10 23:20:04', 0, 909, 0, 380, 'LATE', 'MANUAL', '', 0),
+(5, 1, '2026-06-11', 1, 1, '2026-06-11 15:05:57', NULL, 0, 415, 0, 0, 'LATE', 'MANUAL', '', 0),
+(6, 2, '2026-06-23', 2, 1, '2026-06-23 10:30:30', '2026-06-23 09:40:10', 569, 0, 508, 0, 'CORRECTED', 'MANUAL', 'Corrected by administrator: ', 0),
+(12, 1, '2026-06-23', 1, 1, '2026-06-23 10:31:59', '2026-06-23 10:32:01', 0, 141, 387, 0, 'LATE', 'MANUAL', '', 0);
 
 -- --------------------------------------------------------
 
@@ -188,6 +209,14 @@ CREATE TABLE `attendance_summaries` (
   `overtime_hours` decimal(7,2) DEFAULT 0.00,
   `generated_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `attendance_summaries`
+--
+
+INSERT INTO `attendance_summaries` (`id`, `payroll_period_id`, `employee_id`, `present_days`, `absent_days`, `leave_days`, `late_minutes`, `undertime_minutes`, `overtime_hours`, `generated_at`) VALUES
+(1, 2, 1, 1.00, 0.00, 0.00, 141, 387, 0.00, '2026-06-23 03:12:17'),
+(2, 2, 2, 1.00, 0.00, 0.00, 0, 508, 0.00, '2026-06-23 03:12:17');
 
 -- --------------------------------------------------------
 
@@ -267,7 +296,75 @@ INSERT INTO `audit_logs` (`id`, `user_id`, `action_type`, `module_name`, `descri
 (56, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-15 16:09:25'),
 (57, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 02:20:45'),
 (58, 2, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-16 02:21:10'),
-(59, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 02:21:16');
+(59, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 02:21:16'),
+(60, 2, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-16 14:12:03'),
+(61, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 14:12:23'),
+(62, 2, 'SUBMIT', 'SICK_RECORDS', 'Filed sick record.', '2026-06-16 14:13:35'),
+(63, 2, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-16 14:13:38'),
+(64, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 14:13:43'),
+(65, 1, 'LOGOUT', 'AUTHENTICATION', 'Administrator logged out.', '2026-06-16 14:14:12'),
+(66, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 15:11:52'),
+(67, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 15:16:14'),
+(68, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-16 15:19:32'),
+(69, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-22 15:56:10'),
+(70, 2, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-22 15:56:16'),
+(71, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-22 15:56:21'),
+(72, 1, 'LOGOUT', 'AUTHENTICATION', 'Administrator logged out.', '2026-06-22 15:56:36'),
+(73, 3, 'REGISTER', 'ACCOUNTS', 'New employee account registered.', '2026-06-22 15:57:05'),
+(74, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-22 15:57:12'),
+(75, 3, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-22 15:57:26'),
+(76, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-22 15:57:31'),
+(77, 1, 'CREATE', 'SCHEDULES', 'Added record.', '2026-06-22 15:59:58'),
+(78, 1, 'LOGOUT', 'AUTHENTICATION', 'Administrator logged out.', '2026-06-22 16:00:18'),
+(79, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-22 16:00:22'),
+(80, 3, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-22 16:00:28'),
+(81, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-22 16:00:33'),
+(82, 1, 'CREATE', 'ASSIGNMENTS', 'Added record.', '2026-06-22 16:01:17'),
+(83, 1, 'LOGOUT', 'AUTHENTICATION', 'Administrator logged out.', '2026-06-22 16:01:26'),
+(84, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-22 16:01:30'),
+(85, 3, 'TIME_IN', 'ATTENDANCE', 'Employee clocked in.', '2026-06-22 16:01:33'),
+(86, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 01:26:47'),
+(87, 2, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-23 01:49:28'),
+(88, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 01:50:00'),
+(89, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:30:47'),
+(90, 3, 'TIME_OUT', 'ATTENDANCE', 'Employee clocked out.', '2026-06-23 02:31:28'),
+(91, 3, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-23 02:31:44'),
+(92, 2, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:31:49'),
+(93, 2, 'TIME_IN', 'ATTENDANCE', 'Employee clocked in.', '2026-06-23 02:31:59'),
+(94, 2, 'TIME_OUT', 'ATTENDANCE', 'Employee clocked out.', '2026-06-23 02:32:01'),
+(95, 2, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-23 02:32:09'),
+(96, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:32:13'),
+(97, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:32:44'),
+(98, 3, 'SUBMIT', 'SICK_RECORDS', 'Filed sick record.', '2026-06-23 02:33:06'),
+(99, 3, 'UPDATE', 'SAFETY_CHECKLIST', 'Saved Laboratory safety checklist.', '2026-06-23 02:33:31'),
+(100, 3, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-23 02:40:56'),
+(101, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:41:33'),
+(102, 1, 'LOGOUT', 'AUTHENTICATION', 'Administrator logged out.', '2026-06-23 02:41:44'),
+(103, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:41:48'),
+(104, 3, 'SUBMIT', 'LEAVE', 'Filed leave request.', '2026-06-23 02:43:04'),
+(105, 3, 'SUBMIT', 'LEAVE', 'Filed leave request.', '2026-06-23 02:43:05'),
+(106, 3, 'SUBMIT', 'OVERTIME', 'Filed overtime request.', '2026-06-23 02:43:36'),
+(107, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:51:59'),
+(108, 3, 'SUBMIT', 'CORRECTIONS', 'Requested attendance correction.', '2026-06-23 02:52:20'),
+(109, 3, 'MESSAGE', 'MESSAGES', 'Sent message to admin.', '2026-06-23 02:53:03'),
+(110, 3, 'MESSAGE', 'MESSAGES', 'Sent message to admin.', '2026-06-23 02:53:05'),
+(111, 3, 'UPDATE', 'MEDICAL', 'Updated employee medical details.', '2026-06-23 02:53:39'),
+(112, 3, 'UPDATE', 'SAFETY_CHECKLIST', 'Saved Laboratory safety checklist.', '2026-06-23 02:53:47'),
+(113, 3, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-23 02:53:50'),
+(114, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:53:54'),
+(115, 1, 'APPROVED', 'LEAVE', 'Reviewed leave request #2', '2026-06-23 02:54:15'),
+(116, 1, 'APPROVED', 'OVERTIME', 'Reviewed overtime #1', '2026-06-23 02:54:37'),
+(117, 1, 'APPROVE', 'CORRECTIONS', 'Applied correction #1', '2026-06-23 02:54:45'),
+(118, 1, 'UPDATE', 'EMPLOYEES', 'Updated record #2', '2026-06-23 02:57:08'),
+(119, 1, 'LOGOUT', 'AUTHENTICATION', 'Administrator logged out.', '2026-06-23 02:58:45'),
+(120, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:58:48'),
+(121, 3, 'LOGOUT', 'AUTHENTICATION', 'Employee logged out.', '2026-06-23 02:58:58'),
+(122, 1, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 02:59:02'),
+(123, 1, 'CREATE', 'HS_INCIDENT', 'Reported incident for employee #2', '2026-06-23 03:06:11'),
+(124, 1, 'CREATE', 'PAYROLL', 'Added record.', '2026-06-23 03:11:58'),
+(125, 1, 'GENERATE', 'SUMMARIES', 'Generated attendance summaries for payroll period 2', '2026-06-23 03:12:17'),
+(126, 1, 'DELETE', 'SICK_MONITORING', 'Deleted sick record #1', '2026-06-23 03:12:46'),
+(127, 3, 'LOGIN', 'AUTHENTICATION', 'Logged into attendance system.', '2026-06-23 03:22:42');
 
 -- --------------------------------------------------------
 
@@ -320,6 +417,19 @@ INSERT INTO `departments` (`id`, `department_code`, `department_name`, `manager_
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `department_staffing_requirements`
+--
+
+CREATE TABLE `department_staffing_requirements` (
+  `id` int(11) NOT NULL,
+  `department_id` int(11) NOT NULL,
+  `shift_id` int(11) NOT NULL,
+  `min_required_staff` int(11) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `employees`
 --
 
@@ -341,7 +451,23 @@ CREATE TABLE `employees` (
 --
 
 INSERT INTO `employees` (`id`, `user_id`, `employee_no`, `department_id`, `position_id`, `date_hired`, `birth_date`, `address`, `emergency_contact`, `employment_status`) VALUES
-(1, 2, 'EMP-0001', 2, 2, '2025-06-01', NULL, 'Manila, Philippines', 'Ana Dela Cruz - 09171234567', 'ACTIVE');
+(1, 2, 'EMP-0001', 2, 2, '2025-06-01', NULL, 'Manila, Philippines', 'Ana Dela Cruz - 09171234567', 'ACTIVE'),
+(2, 3, '42', 2, 2, '2026-06-22', '2005-11-27', 'asd', '123', 'ACTIVE');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `employee_availability`
+--
+
+CREATE TABLE `employee_availability` (
+  `id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `preferred_workday` varchar(20) DEFAULT NULL,
+  `unavailable_date` date DEFAULT NULL,
+  `requested_rest_day` date DEFAULT NULL,
+  `status` enum('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -370,7 +496,8 @@ CREATE TABLE `employee_medical_details` (
 --
 
 INSERT INTO `employee_medical_details` (`id`, `employee_id`, `blood_type`, `allergy`, `existing_condition`, `emergency_notes`, `medical_certificate`, `workplace_injury_report`, `health_declaration`, `fitness_to_work_clearance`, `wellness_activity`, `created_at`, `updated_at`) VALUES
-(1, 1, 'AB+', 'Cancer', 'Cancer', 'Cancer', NULL, NULL, NULL, NULL, NULL, '2026-06-10 15:52:22', '2026-06-10 15:52:22');
+(1, 1, 'AB+', 'Cancer', 'Cancer', 'Cancer', NULL, NULL, NULL, NULL, NULL, '2026-06-10 15:52:22', '2026-06-10 15:52:22'),
+(2, 2, 'A-', 'Water', 'Scoliosis', '', NULL, NULL, NULL, NULL, NULL, '2026-06-23 02:53:39', '2026-06-23 02:53:39');
 
 -- --------------------------------------------------------
 
@@ -392,6 +519,13 @@ CREATE TABLE `health_safety_incidents` (
   `status` enum('REPORTED','UNDER_INVESTIGATION','CLOSED') NOT NULL DEFAULT 'REPORTED',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `health_safety_incidents`
+--
+
+INSERT INTO `health_safety_incidents` (`id`, `employee_id`, `incident_date`, `incident_type`, `location`, `description`, `immediate_action`, `reported_by`, `investigated_by`, `investigation_notes`, `status`, `created_at`) VALUES
+(6, 2, '2026-06-23', 'ILLNESS', 'PUP Itech', 'Sick asf rn', 'Give 1.00', 1, NULL, 'He dyin', 'REPORTED', '2026-06-23 03:06:11');
 
 -- --------------------------------------------------------
 
@@ -435,6 +569,14 @@ CREATE TABLE `leave_requests` (
   `reviewed_at` datetime DEFAULT NULL,
   `admin_remarks` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `leave_requests`
+--
+
+INSERT INTO `leave_requests` (`id`, `employee_id`, `leave_type_id`, `start_date`, `end_date`, `total_days`, `reason`, `status`, `filed_at`, `reviewed_by`, `reviewed_at`, `admin_remarks`) VALUES
+(1, 2, 2, '2000-06-23', '2027-06-23', 10.00, '', 'CANCELLED', '2026-06-23 02:43:04', NULL, NULL, NULL),
+(2, 2, 2, '2000-06-23', '2027-06-23', 10.00, '', 'APPROVED', '2026-06-23 02:43:05', 1, '2026-06-23 10:54:15', '');
 
 --
 -- Triggers `leave_requests`
@@ -553,6 +695,14 @@ CREATE TABLE `messages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
+-- Dumping data for table `messages`
+--
+
+INSERT INTO `messages` (`id`, `sender_id`, `receiver_id`, `subject`, `message_body`, `sent_at`, `read_status`) VALUES
+(1, 3, 1, '1', 'Hi', '2026-06-23 02:53:03', 'UNREAD'),
+(2, 3, 1, '1', 'Hi', '2026-06-23 02:53:04', 'UNREAD');
+
+--
 -- Triggers `messages`
 --
 DELIMITER $$
@@ -578,6 +728,110 @@ CREATE TABLE `notifications` (
   `read_status` enum('UNREAD','READ') DEFAULT 'UNREAD'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `title`, `message_body`, `notification_type`, `created_at`, `read_status`) VALUES
+(1, 3, 'Leave Request Filed', 'Your leave request #1 is pending approval.', 'LEAVE', '2026-06-23 02:43:04', 'READ'),
+(2, 3, 'Leave Request Filed', 'Your leave request #2 is pending approval.', 'LEAVE', '2026-06-23 02:43:05', 'UNREAD'),
+(3, 3, 'Leave Request Updated', 'Your leave request #1 status is CANCELLED.', 'LEAVE', '2026-06-23 02:43:11', 'UNREAD'),
+(4, 1, 'New Message: 1', 'Hi', 'MESSAGE', '2026-06-23 02:53:03', 'UNREAD'),
+(5, 1, 'New Message: 1', 'Hi', 'MESSAGE', '2026-06-23 02:53:04', 'UNREAD'),
+(6, 3, 'Leave Request Updated', 'Your leave request #2 status is APPROVED.', 'LEAVE', '2026-06-23 02:54:15', 'UNREAD'),
+(7, 3, 'Overtime Request Updated', 'Your overtime request #1 status is APPROVED.', 'OVERTIME', '2026-06-23 02:54:37', 'UNREAD'),
+(8, 3, 'Attendance Correction Updated', 'Your attendance correction #1 status is APPROVED.', 'CORRECTION', '2026-06-23 02:54:45', 'UNREAD');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `offsite_accomplishments`
+--
+
+CREATE TABLE `offsite_accomplishments` (
+  `id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `attendance_date` date NOT NULL,
+  `accomplishment_text` text NOT NULL,
+  `document_path` varchar(255) DEFAULT NULL,
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `verification_status` enum('PENDING','VERIFIED','REJECTED') DEFAULT 'PENDING',
+  `verified_by` int(11) DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `manager_remarks` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `offsite_requests`
+--
+
+CREATE TABLE `offsite_requests` (
+  `id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `request_type` enum('WFH','OFFICIAL_BUSINESS','FIELD_ASSIGNMENT','TRAVEL_DUTY') NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `destination_or_location` varchar(255) NOT NULL,
+  `purpose` text NOT NULL,
+  `status` enum('PENDING','APPROVED','REJECTED','CANCELLED') DEFAULT 'PENDING',
+  `filed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `admin_remarks` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Triggers `offsite_requests`
+--
+DELIMITER $$
+CREATE TRIGGER `trg_offsite_created` AFTER INSERT ON `offsite_requests` FOR EACH ROW BEGIN
+    INSERT INTO notifications
+        (user_id, title, message_body, notification_type)
+    SELECT
+        user_id,
+        'Off-Site Request Filed',
+        CONCAT(
+            'Your ',
+            NEW.request_type,
+            ' request #',
+            NEW.id,
+            ' is pending review.'
+        ),
+        'OFFSITE'
+    FROM employees
+    WHERE id = NEW.employee_id
+      AND user_id IS NOT NULL;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_offsite_reviewed` AFTER UPDATE ON `offsite_requests` FOR EACH ROW BEGIN
+    IF NEW.status <> OLD.status THEN
+        INSERT INTO notifications
+            (user_id, title, message_body, notification_type)
+        SELECT
+            user_id,
+            'Off-Site Request Updated',
+            CONCAT(
+                'Your ',
+                NEW.request_type,
+                ' request #',
+                NEW.id,
+                ' status is now ',
+                NEW.status,
+                '.'
+            ),
+            'OFFSITE'
+        FROM employees
+        WHERE id = NEW.employee_id
+          AND user_id IS NOT NULL;
+    END IF;
+END
+$$
+DELIMITER ;
+
 -- --------------------------------------------------------
 
 --
@@ -596,6 +850,13 @@ CREATE TABLE `overtime_requests` (
   `reviewed_at` datetime DEFAULT NULL,
   `admin_remarks` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `overtime_requests`
+--
+
+INSERT INTO `overtime_requests` (`id`, `employee_id`, `overtime_date`, `requested_hours`, `purpose`, `status`, `approved_hours`, `reviewed_by`, `reviewed_at`, `admin_remarks`) VALUES
+(1, 2, '2026-06-23', 50.00, 'Im Pregnant', 'APPROVED', 300.00, 1, '2026-06-23 10:54:37', '');
 
 --
 -- Triggers `overtime_requests`
@@ -629,7 +890,8 @@ CREATE TABLE `payroll_periods` (
 --
 
 INSERT INTO `payroll_periods` (`id`, `period_name`, `date_from`, `date_to`, `cutoff_status`) VALUES
-(1, 'May 16-31, 2026', '2026-05-16', '2026-05-31', 'OPEN');
+(1, 'May 16-31, 2026', '2026-05-16', '2026-05-31', 'OPEN'),
+(2, 'ASD', '2026-06-22', '2026-06-23', 'OPEN');
 
 -- --------------------------------------------------------
 
@@ -697,6 +959,46 @@ CREATE TABLE `return_to_work_clearances` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `safety_checklist_records`
+--
+
+CREATE TABLE `safety_checklist_records` (
+  `id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `department_type` enum('Office','Laboratory','Warehouse') NOT NULL,
+  `item_label` varchar(150) NOT NULL,
+  `is_checked` tinyint(1) NOT NULL DEFAULT 0,
+  `checked_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `safety_checklist_records`
+--
+
+INSERT INTO `safety_checklist_records` (`id`, `employee_id`, `department_type`, `item_label`, `is_checked`, `checked_at`) VALUES
+(1, 2, 'Laboratory', 'PPE worn before entering lab', 1, '2026-06-23 02:33:31'),
+(2, 2, 'Laboratory', 'Chemical storage labels verified', 1, '2026-06-23 02:33:31'),
+(3, 2, 'Laboratory', 'Eyewash station accessible', 1, '2026-06-23 02:53:47');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `schedule_revision_history`
+--
+
+CREATE TABLE `schedule_revision_history` (
+  `id` int(11) NOT NULL,
+  `schedule_id` int(11) NOT NULL,
+  `original_employee_id` int(11) NOT NULL,
+  `replacement_employee_id` int(11) NOT NULL,
+  `reason` text DEFAULT NULL,
+  `approved_by` int(11) NOT NULL,
+  `revised_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `shift_assignments`
 --
 
@@ -715,7 +1017,32 @@ CREATE TABLE `shift_assignments` (
 --
 
 INSERT INTO `shift_assignments` (`id`, `employee_id`, `shift_id`, `effective_from`, `effective_to`, `day_pattern`, `status`) VALUES
-(1, 1, 1, '2026-01-01', NULL, 'MON-FRI', 'ACTIVE');
+(1, 1, 1, '2026-01-01', NULL, 'MON-FRI', 'ACTIVE'),
+(2, 2, 2, '2019-10-10', '2026-06-23', NULL, 'ACTIVE');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `shift_swaps`
+--
+
+CREATE TABLE `shift_swaps` (
+  `id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `target_employee_id` int(11) NOT NULL,
+  `schedule_id` int(11) DEFAULT 1,
+  `reason` text NOT NULL,
+  `status` varchar(20) DEFAULT 'PENDING',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `shift_swaps`
+--
+
+INSERT INTO `shift_swaps` (`id`, `employee_id`, `target_employee_id`, `schedule_id`, `reason`, `status`, `created_at`) VALUES
+(101, 1, 2, 1, 'Academic Conflict - PUP Activity', 'PENDING', '2026-06-23 01:52:49'),
+(102, 3, 4, 1, 'Medical Appointment', 'PENDING', '2026-06-23 01:52:49');
 
 -- --------------------------------------------------------
 
@@ -769,7 +1096,8 @@ CREATE TABLE `sick_records` (
 --
 
 INSERT INTO `sick_records` (`id`, `employee_id`, `report_date`, `diagnosis`, `diagnosis_code`, `doctor_name`, `recommendation`, `recovery_days`, `status`, `admin_remarks`, `created_at`) VALUES
-(1, 1, '2026-06-15', 'Cancer', NULL, 'Mikael Yakshun', 'Kys', 67, 'ACTIVE', 'Sure king', '2026-06-15 15:46:43');
+(2, 1, '2026-06-16', 'Tubercolosis MAX', NULL, 'Luhbron Jims', 'Grind Rank Games', 67, 'ACTIVE', NULL, '2026-06-16 14:13:35'),
+(3, 2, '2026-06-23', 'Cancer', NULL, 'Mikhail Yakshun', '', 10, 'ACTIVE', NULL, '2026-06-23 02:33:06');
 
 -- --------------------------------------------------------
 
@@ -816,7 +1144,8 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `password_hash`, `role`, `full_name`, `email`, `phone`, `status`, `created_at`) VALUES
 (1, 'admin', 'e86f78a8a3caf0b60d8e74e5942aa6d86dc150cd3c03338aef25b7d2d7e3acc7', 'ADMIN', 'System Administrator', 'admin@company.local', '09170000001', 'ACTIVE', '2026-06-01 13:57:45'),
-(2, 'employee1', '3e7c19576488862816f13b512cacf3e4ba97dd97243ea0bd6a2ad1642d86ba72', 'EMPLOYEE', 'Justin Nicolai Robert Bautista y Elijandro Banaag Algernon von Mendoza II the Great van Baskerville', 'employee1@company.local', '09170000002', 'ACTIVE', '2026-06-01 13:57:45');
+(2, 'employee1', '3e7c19576488862816f13b512cacf3e4ba97dd97243ea0bd6a2ad1642d86ba72', 'EMPLOYEE', 'Justin Nicolai Robert Bautista y Elijandro Banaag Algernon von Mendoza II the Great van Baskerville', 'employee1@company.local', '09170000002', 'ACTIVE', '2026-06-01 13:57:45'),
+(3, 'Raiken', '96cae35ce8a9b0244178bf28e4966c2ce1b8385723a96a6b838858cdd6ca0a1e', 'EMPLOYEE', 'Renzie', 'sample@a.com', '099', 'ACTIVE', '2026-06-22 15:57:05');
 
 -- --------------------------------------------------------
 
@@ -836,7 +1165,7 @@ CREATE TABLE `v_daily_attendance` (
 ,`late_minutes` int(11)
 ,`undertime_minutes` int(11)
 ,`overtime_minutes` int(11)
-,`attendance_status` enum('PRESENT','LATE','ABSENT','ON_LEAVE','REST_DAY','HOLIDAY','CORRECTED')
+,`attendance_status` enum('PRESENT','LATE','ABSENT','ON_LEAVE','REST_DAY','HOLIDAY','CORRECTED','WFH','OFFICIAL_BUSINESS','FIELD_ASSIGNMENT','TRAVEL_DUTY')
 );
 
 -- --------------------------------------------------------
@@ -895,6 +1224,26 @@ CREATE TABLE `v_hs_incident_summary` (
 ,`incident_status` enum('REPORTED','UNDER_INVESTIGATION','CLOSED')
 ,`active_restrictions` bigint(21)
 ,`approved_rtw_clearances` bigint(21)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `v_hybrid_field_reporting`
+-- (See below for the actual view)
+--
+CREATE TABLE `v_hybrid_field_reporting` (
+`attendance_date` date
+,`employee_no` varchar(30)
+,`employee_name` varchar(120)
+,`department_name` varchar(100)
+,`duty_classification` enum('PRESENT','LATE','ABSENT','ON_LEAVE','REST_DAY','HOLIDAY','CORRECTED','WFH','OFFICIAL_BUSINESS','FIELD_ASSIGNMENT','TRAVEL_DUTY')
+,`clock_in` datetime
+,`clock_out` datetime
+,`approved_destination` varchar(255)
+,`accomplishment_text` text
+,`attached_proof` varchar(255)
+,`supervisor_verification` enum('PENDING','VERIFIED','REJECTED')
 );
 
 -- --------------------------------------------------------
@@ -1045,7 +1394,8 @@ CREATE TABLE `work_schedules` (
 --
 
 INSERT INTO `work_schedules` (`id`, `employee_id`, `schedule_date`, `shift_id`, `schedule_status`, `remarks`) VALUES
-(1, 1, '2026-06-01', 1, 'WORKDAY', 'Regular schedule');
+(1, 1, '2026-06-01', 1, 'WORKDAY', 'Regular schedule'),
+(7, 2, '2026-11-11', 1, 'WORKDAY', 'yes');
 
 -- --------------------------------------------------------
 
@@ -1082,6 +1432,15 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `v_hs_incident_summary`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_hs_incident_summary`  AS SELECT `i`.`id` AS `id`, `e`.`employee_no` AS `employee_no`, `u`.`full_name` AS `full_name`, `d`.`department_name` AS `department_name`, `i`.`incident_date` AS `incident_date`, `i`.`incident_type` AS `incident_type`, `i`.`location` AS `location`, `i`.`description` AS `description`, `i`.`status` AS `incident_status`, (select count(0) from `medical_restrictions` `mr` where `mr`.`incident_id` = `i`.`id` and `mr`.`status` = 'ACTIVE') AS `active_restrictions`, (select count(0) from `return_to_work_clearances` `r` where `r`.`employee_id` = `i`.`employee_id` and `r`.`status` = 'APPROVED') AS `approved_rtw_clearances` FROM (((`health_safety_incidents` `i` join `employees` `e` on(`i`.`employee_id` = `e`.`id`)) join `users` `u` on(`e`.`user_id` = `u`.`id`)) left join `departments` `d` on(`e`.`department_id` = `d`.`id`)) ORDER BY `i`.`incident_date` DESC ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `v_hybrid_field_reporting`
+--
+DROP TABLE IF EXISTS `v_hybrid_field_reporting`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_hybrid_field_reporting`  AS SELECT `ar`.`attendance_date` AS `attendance_date`, `e`.`employee_no` AS `employee_no`, `u`.`full_name` AS `employee_name`, `d`.`department_name` AS `department_name`, `ar`.`attendance_status` AS `duty_classification`, `ar`.`clock_in` AS `clock_in`, `ar`.`clock_out` AS `clock_out`, `osr`.`destination_or_location` AS `approved_destination`, `osa`.`accomplishment_text` AS `accomplishment_text`, `osa`.`document_path` AS `attached_proof`, `osa`.`verification_status` AS `supervisor_verification` FROM (((((`attendance_records` `ar` join `employees` `e` on(`ar`.`employee_id` = `e`.`id`)) join `users` `u` on(`e`.`user_id` = `u`.`id`)) left join `departments` `d` on(`e`.`department_id` = `d`.`id`)) left join `offsite_requests` `osr` on(`e`.`id` = `osr`.`employee_id` and `ar`.`attendance_date` between `osr`.`start_date` and `osr`.`end_date` and `osr`.`status` = 'APPROVED')) left join `offsite_accomplishments` `osa` on(`e`.`id` = `osa`.`employee_id` and `ar`.`attendance_date` = `osa`.`attendance_date`)) ;
 
 -- --------------------------------------------------------
 
@@ -1290,6 +1649,24 @@ ALTER TABLE `notifications`
   ADD KEY `user_id` (`user_id`);
 
 --
+-- Indexes for table `offsite_accomplishments`
+--
+ALTER TABLE `offsite_accomplishments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_daily_accomplishment` (`employee_id`,`attendance_date`),
+  ADD KEY `verified_by` (`verified_by`),
+  ADD KEY `idx_accomplishment_date` (`attendance_date`);
+
+--
+-- Indexes for table `offsite_requests`
+--
+ALTER TABLE `offsite_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `employee_id` (`employee_id`),
+  ADD KEY `reviewed_by` (`reviewed_by`),
+  ADD KEY `idx_offsite_request_status` (`status`);
+
+--
 -- Indexes for table `overtime_requests`
 --
 ALTER TABLE `overtime_requests`
@@ -1328,12 +1705,25 @@ ALTER TABLE `return_to_work_clearances`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `safety_checklist_records`
+--
+ALTER TABLE `safety_checklist_records`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_emp_dept_item` (`employee_id`,`department_type`,`item_label`);
+
+--
 -- Indexes for table `shift_assignments`
 --
 ALTER TABLE `shift_assignments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `employee_id` (`employee_id`),
   ADD KEY `shift_id` (`shift_id`);
+
+--
+-- Indexes for table `shift_swaps`
+--
+ALTER TABLE `shift_swaps`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `shift_templates`
@@ -1401,7 +1791,7 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `attendance_corrections`
 --
 ALTER TABLE `attendance_corrections`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `attendance_locations`
@@ -1413,25 +1803,25 @@ ALTER TABLE `attendance_locations`
 -- AUTO_INCREMENT for table `attendance_logs`
 --
 ALTER TABLE `attendance_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `attendance_records`
 --
 ALTER TABLE `attendance_records`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `attendance_summaries`
 --
 ALTER TABLE `attendance_summaries`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=128;
 
 --
 -- AUTO_INCREMENT for table `biometric_devices`
@@ -1449,19 +1839,19 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `employee_medical_details`
 --
 ALTER TABLE `employee_medical_details`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `health_safety_incidents`
 --
 ALTER TABLE `health_safety_incidents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `holidays`
@@ -1473,7 +1863,7 @@ ALTER TABLE `holidays`
 -- AUTO_INCREMENT for table `leave_requests`
 --
 ALTER TABLE `leave_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `leave_types`
@@ -1497,25 +1887,37 @@ ALTER TABLE `medical_restrictions`
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `offsite_accomplishments`
+--
+ALTER TABLE `offsite_accomplishments`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `offsite_requests`
+--
+ALTER TABLE `offsite_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `overtime_requests`
 --
 ALTER TABLE `overtime_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `payroll_periods`
 --
 ALTER TABLE `payroll_periods`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `payslip_adjustments`
@@ -1536,10 +1938,22 @@ ALTER TABLE `return_to_work_clearances`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `safety_checklist_records`
+--
+ALTER TABLE `safety_checklist_records`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT for table `shift_assignments`
 --
 ALTER TABLE `shift_assignments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `shift_swaps`
+--
+ALTER TABLE `shift_swaps`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
 
 --
 -- AUTO_INCREMENT for table `shift_templates`
@@ -1551,7 +1965,7 @@ ALTER TABLE `shift_templates`
 -- AUTO_INCREMENT for table `sick_records`
 --
 ALTER TABLE `sick_records`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `system_settings`
@@ -1563,7 +1977,7 @@ ALTER TABLE `system_settings`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `wellness_participants`
@@ -1581,7 +1995,7 @@ ALTER TABLE `wellness_programs`
 -- AUTO_INCREMENT for table `work_schedules`
 --
 ALTER TABLE `work_schedules`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables
@@ -1695,6 +2109,20 @@ ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `offsite_accomplishments`
+--
+ALTER TABLE `offsite_accomplishments`
+  ADD CONSTRAINT `offsite_accomplishments_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `offsite_accomplishments_ibfk_2` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `offsite_requests`
+--
+ALTER TABLE `offsite_requests`
+  ADD CONSTRAINT `offsite_requests_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `offsite_requests_ibfk_2` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `overtime_requests`
 --
 ALTER TABLE `overtime_requests`
@@ -1713,6 +2141,12 @@ ALTER TABLE `payslip_adjustments`
 --
 ALTER TABLE `positions`
   ADD CONSTRAINT `positions_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `safety_checklist_records`
+--
+ALTER TABLE `safety_checklist_records`
+  ADD CONSTRAINT `safety_checklist_records_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `shift_assignments`
@@ -1751,119 +2185,3 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
-CREATE VIEW v_employee_roster AS
-SELECT e.id,e.employee_no,u.full_name,u.email,d.department_name,p.position_title,e.date_hired,e.employment_status
-FROM employees e JOIN users u ON e.user_id=u.id LEFT JOIN departments d ON e.department_id=d.id LEFT JOIN positions p ON e.position_id=p.id;
-CREATE VIEW v_daily_attendance AS
-SELECT ar.id,ar.attendance_date,e.employee_no,u.full_name,d.department_name,s.shift_name,ar.clock_in,ar.clock_out,ar.late_minutes,ar.undertime_minutes,ar.overtime_minutes,ar.attendance_status
-FROM attendance_records ar JOIN employees e ON ar.employee_id=e.id JOIN users u ON e.user_id=u.id LEFT JOIN departments d ON e.department_id=d.id LEFT JOIN shift_templates s ON ar.shift_id=s.id;
-CREATE VIEW v_late_absence_summary AS
-SELECT e.employee_no,u.full_name,d.department_name,COUNT(CASE WHEN ar.attendance_status='ABSENT' THEN 1 END) absent_days,SUM(ar.late_minutes) late_minutes,SUM(ar.undertime_minutes) undertime_minutes
-FROM employees e JOIN users u ON e.user_id=u.id LEFT JOIN departments d ON e.department_id=d.id LEFT JOIN attendance_records ar ON e.id=ar.employee_id GROUP BY e.id,e.employee_no,u.full_name,d.department_name;
-CREATE VIEW v_leave_monitoring AS
-SELECT lr.id,e.employee_no,u.full_name,lt.leave_name,lr.start_date,lr.end_date,lr.total_days,lr.reason,lr.status,lr.filed_at
-FROM leave_requests lr JOIN employees e ON lr.employee_id=e.id JOIN users u ON e.user_id=u.id JOIN leave_types lt ON lr.leave_type_id=lt.id;
-CREATE VIEW v_overtime_monitoring AS
-SELECT o.id,e.employee_no,u.full_name,o.overtime_date,o.requested_hours,o.approved_hours,o.purpose,o.status
-FROM overtime_requests o JOIN employees e ON o.employee_id=e.id JOIN users u ON e.user_id=u.id;
-CREATE VIEW v_payroll_attendance_summary AS
-SELECT pp.period_name,e.employee_no,u.full_name,s.present_days,s.absent_days,s.leave_days,s.late_minutes,s.undertime_minutes,s.overtime_hours
-FROM attendance_summaries s JOIN payroll_periods pp ON s.payroll_period_id=pp.id JOIN employees e ON s.employee_id=e.id JOIN users u ON e.user_id=u.id;
-
-ALTER TABLE attendance_records 
-MODIFY COLUMN attendance_status ENUM(
-    'PRESENT', 'LATE', 'ABSENT', 'ON_LEAVE', 'REST_DAY', 'HOLIDAY', 'CORRECTED',
-    'WFH', 'OFFICIAL_BUSINESS', 'FIELD_ASSIGNMENT', 'TRAVEL_DUTY'
-) DEFAULT 'PRESENT';
-
-DROP TABLE IF EXISTS offsite_requests;
-CREATE TABLE offsite_requests (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    employee_no VARCHAR(30) NOT NULL,             
-    request_type ENUM('WFH', 'OFFICIAL_BUSINESS', 'FIELD_ASSIGNMENT', 'TRAVEL_DUTY') NOT NULL,
-    start_date DATE NOT NULL,                      
-    end_date DATE NOT NULL,                        
-    destination_or_location VARCHAR(255) NOT NULL,
-    purpose TEXT NOT NULL,
-    status ENUM('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED') DEFAULT 'PENDING',
-    filed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    reviewed_by INT,
-    reviewed_at DATETIME,
-    admin_remarks VARCHAR(255)
-);
-
-DROP TABLE IF EXISTS offsite_accomplishments;
-CREATE TABLE offsite_accomplishments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    employee_no VARCHAR(30) NOT NULL,             
-    attendance_date DATE NOT NULL,
-    accomplishment_text TEXT NOT NULL,
-    document_path VARCHAR(255),                     
-    verification_status ENUM('PENDING', 'VERIFIED', 'REJECTED') DEFAULT 'PENDING',
-    verified_by INT,
-    verified_at DATETIME,
-    supervisor_remarks VARCHAR(255),
-    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_emp_date (employee_no, attendance_date)
-);
-
-ALTER TABLE attendance_records 
-ADD COLUMN is_offsite_verified TINYINT(1) DEFAULT 0 AFTER remarks;
-
-ALTER TABLE attendance_logs 
-ADD COLUMN latitude DECIMAL(10, 8) DEFAULT NULL,
-ADD COLUMN longitude DECIMAL(11, 8) DEFAULT NULL,
-ADD COLUMN attachment_proof_path VARCHAR(255) DEFAULT NULL;
-
-CREATE INDEX idx_offsite_request_status ON offsite_requests(status);
-CREATE INDEX idx_accomplishment_date ON offsite_accomplishments(attendance_date);
-
-DELIMITER $$
-
-DROP TRIGGER IF EXISTS trg_offsite_created$$
-CREATE TRIGGER trg_offsite_created AFTER INSERT ON offsite_requests FOR EACH ROW
-BEGIN
-    INSERT INTO notifications(user_id, title, message_body, notification_type)
-    SELECT user_id, 'Off-Site Request Filed', CONCAT('Your ', NEW.request_type, ' request #', NEW.id, ' is pending review.'), 'OFFSITE' 
-    FROM employees WHERE employee_no = NEW.employee_no AND user_id IS NOT NULL;
-END$$
-
-DROP TRIGGER IF EXISTS trg_offsite_reviewed$$
-CREATE TRIGGER trg_offsite_reviewed AFTER UPDATE ON offsite_requests FOR EACH ROW
-BEGIN
-    IF NEW.status <> OLD.status THEN
-        INSERT INTO notifications(user_id, title, message_body, notification_type)
-        SELECT user_id, 'Off-Site Request Updated', CONCAT('Your ', NEW.request_type, ' request #', NEW.id, ' status is now ', NEW.status, '.'), 'OFFSITE' 
-        FROM employees WHERE employee_no = NEW.employee_no AND user_id IS NOT NULL;
-    END IF;
-END$$
-
-DELIMITER ;
-
-DROP VIEW IF EXISTS v_hybrid_field_reporting;
-CREATE VIEW v_hybrid_field_reporting AS
-SELECT 
-    ar.attendance_date,
-    e.id AS employee_id,
-    e.employee_no,                    
-    u.full_name AS employee_name,
-    d.department_name,
-    ar.attendance_status AS duty_classification,
-    ar.clock_in,
-    ar.clock_out,
-    osr.destination_or_location AS approved_destination,
-    osa.accomplishment_text,
-    osa.document_path AS attached_proof,
-    osa.verification_status AS supervisor_verification
-FROM attendance_records ar
-JOIN employees e ON ar.employee_id = e.id
-JOIN users u ON e.user_id = u.id
-LEFT JOIN departments d ON e.department_id = d.id
-LEFT JOIN offsite_requests osr ON e.employee_no = osr.employee_no 
-    AND ar.attendance_date BETWEEN osr.start_date AND osr.end_date 
-    AND osr.status = 'APPROVED'
-LEFT JOIN offsite_accomplishments osa ON e.employee_no = osa.employee_no 
-    AND ar.attendance_date = osa.attendance_date;
-    
-ALTER TABLE employees MODIFY COLUMN employee_no VARCHAR(30) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (employee_no);
