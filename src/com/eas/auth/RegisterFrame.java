@@ -3,6 +3,7 @@ package com.eas.auth;
 import com.eas.service.AuthService;
 import com.eas.util.*;
 import java.awt.*;
+import java.sql.SQLException;
 import javax.swing.*;
 
 public class RegisterFrame extends JFrame {
@@ -76,7 +77,7 @@ public class RegisterFrame extends JFrame {
             dispose();
             new LoginFrame().setVisible(true);
 
-        } catch (Exception ex) {
+        } catch (SQLException ex) {
             Dialogs.error(this, ex.getMessage());
         }
     }
