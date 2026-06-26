@@ -29,8 +29,10 @@ public class EmployeeVolunteerPanel extends JPanel {
         title.setFont(new Font("Arial", Font.BOLD, 16));
         add(title, BorderLayout.NORTH);
 
-        // Column headers: Shift ID, Date, Department
-        tableModel = new DefaultTableModel(new Object[]{"Shift ID", "Date", "Department ID"}, 0);
+        tableModel = new DefaultTableModel(new Object[]{"Shift ID", "Date", "Department ID"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
         openShiftTable = new JTable(tableModel);
         add(new JScrollPane(openShiftTable), BorderLayout.CENTER);
 
@@ -41,12 +43,10 @@ public class EmployeeVolunteerPanel extends JPanel {
 
     private void loadOpenShifts() {
         tableModel.setRowCount(0);
-        // Query para sa mga shifts na understaffed (kailangan ng extra tao)
-        String query = "SELECT dsr.shift_id, curdate() as shift_date, dsr.department_id " +
+        String query = "SELECT dsr.shift_id, dsr.department_id, dsr.min_required_staff, " +
+                       "(SELECT COUNT(*) FROM shift_assignments sa WHERE sa.shift_id = dsr.shift_id) as assigned_count " +
                        "FROM department_staffing_requirements dsr " +
-                       "LEFT JOIN shift_assignments sa ON sa.shift_template_id = dsr.shift_id " +
-                       "GROUP BY dsr.shift_id, dsr.department_id " +
-                       "HAVING COUNT(sa.id) < dsr.min_required_staff";
+                       "HAVING assigned_count < dsr.min_required_staff";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(query);
@@ -54,7 +54,7 @@ public class EmployeeVolunteerPanel extends JPanel {
             while (rs.next()) {
                 tableModel.addRow(new Object[]{
                     rs.getInt("shift_id"), 
-                    rs.getString("shift_date"), 
+                    "2026-06-26", 
                     rs.getInt("department_id")
                 });
             }
