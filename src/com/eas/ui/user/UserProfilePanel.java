@@ -340,7 +340,7 @@ public class UserProfilePanel extends JPanel {
             PreparedStatement ps = c.prepareStatement(
                 "SELECT m.blood_type, m.allergy, m.existing_condition, m.emergency_notes, " +
                 "       m.medical_certificate, m.workplace_injury_report, m.health_declaration, " +
-                "       m.fitness_to_work_clearance, m.wellness_activity " +
+                "       m.wellness_activity " +
                 "FROM employee_medical_details m " +
                 "JOIN employees e ON m.employee_id = e.id " +
                 "WHERE e.user_id = ?")) {
@@ -358,7 +358,6 @@ public class UserProfilePanel extends JPanel {
                     setFileLabel(certLabel,    r.getString("medical_certificate"));
                     setFileLabel(injuryLabel,  r.getString("workplace_injury_report"));
                     setFileLabel(healthLabel,  r.getString("health_declaration"));
-                    setFileLabel(fitnessLabel, r.getString("fitness_to_work_clearance"));
                     setFileLabel(wellnessLabel,r.getString("wellness_activity"));
                 }
             }
