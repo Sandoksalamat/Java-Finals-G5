@@ -1,7 +1,6 @@
 package com.eas.ui.user;
 
 import com.eas.model.UserSession;
-import com.eas.ui.user.EmployeeVolunteerPanel; // Siguraduhing nandito ang import
 import java.awt.*;
 import java.sql.*;
 import javax.swing.*;
@@ -18,12 +17,12 @@ public class MyShiftSwapPanel extends JPanel {
 
     public MyShiftSwapPanel(UserSession s) {
         this.session = s;
-        setLayout(new BorderLayout(15, 15));
+        // Binago ang layout sa BorderLayout para sa paglalagay ng JTabbedPane
+        setLayout(new BorderLayout());
         setBackground(Color.WHITE);
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         resolveEmployeeId();
-        initComponent();
+        initUI(); // Pinagsama ang initialization ng tabs dito
         refreshTableData();
     }
 
@@ -38,7 +37,14 @@ public class MyShiftSwapPanel extends JPanel {
         }
     }
 
-    private void initComponent() {
+    private void initUI() {
+        JTabbedPane tabbedPane = new JTabbedPane();
+
+        // --- TAB 1: Shift Swap Form ---
+        JPanel swapPanel = new JPanel(new BorderLayout(15, 15));
+        swapPanel.setBackground(Color.WHITE);
+        swapPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(Color.WHITE);
         formPanel.setBorder(BorderFactory.createTitledBorder("Create Shift Exchange Request"));
@@ -67,8 +73,16 @@ public class MyShiftSwapPanel extends JPanel {
         tableModel = new DefaultTableModel(new String[]{"ID", "Target ID", "Reason", "Status"}, 0);
         requestTable = new JTable(tableModel);
         
-        add(formPanel, BorderLayout.WEST);
-        add(new JScrollPane(requestTable), BorderLayout.CENTER);
+        swapPanel.add(formPanel, BorderLayout.WEST);
+        swapPanel.add(new JScrollPane(requestTable), BorderLayout.CENTER);
+
+        // --- TAB 2: Volunteer for Open Shifts ---
+        EmployeeVolunteerPanel volunteerPanel = new EmployeeVolunteerPanel(session.getId());
+
+        tabbedPane.addTab("Shift Swap Request", swapPanel);
+        tabbedPane.addTab("Volunteer for Open Shifts", volunteerPanel);
+
+        add(tabbedPane, BorderLayout.CENTER);
     }
 
     private void submitRequest() {
@@ -87,8 +101,8 @@ public class MyShiftSwapPanel extends JPanel {
             }
 
             try (Connection conn = com.eas.config.Database.getConnection();
-                PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO shift_swaps (employee_id, target_employee_id, schedule_id, reason, status) VALUES (?, ?, 1, ?, 'PENDING')")) {
+                 PreparedStatement ps = conn.prepareStatement(
+                     "INSERT INTO shift_swaps (employee_id, target_employee_id, schedule_id, reason, status) VALUES (?, ?, 1, ?, 'PENDING')")) {
                 ps.setInt(1, currentEmployeeId);
                 ps.setInt(2, targetId);
                 ps.setString(3, reason);
@@ -110,8 +124,8 @@ public class MyShiftSwapPanel extends JPanel {
     public void refreshTableData() {
         tableModel.setRowCount(0);
         try (Connection conn = com.eas.config.Database.getConnection();
-            PreparedStatement ps = conn.prepareStatement(
-                "SELECT id, target_employee_id, reason, status FROM shift_swaps WHERE employee_id = ?")) {
+             PreparedStatement ps = conn.prepareStatement(
+                 "SELECT id, target_employee_id, reason, status FROM shift_swaps WHERE employee_id = ?")) {
             ps.setInt(1, currentEmployeeId);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
