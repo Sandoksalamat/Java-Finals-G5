@@ -6,10 +6,9 @@ import java.awt.*;
 import java.sql.*;
 
 public class EmployeePreferencePanel extends JPanel {
-
     private int currentUserId;
     private JTextField restDayField = new JTextField(10);
-    private JTextField unavailableDateField = new JTextField("YYYY-MM-DD", 10);
+    private JTextField unavailableDateField = new JTextField("2026-06-26", 10);
 
     public EmployeePreferencePanel(int userId) {
         this.currentUserId = userId;
