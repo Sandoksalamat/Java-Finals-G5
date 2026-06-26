@@ -7,6 +7,7 @@ import com.eas.ui.admin.AdminDashboardFrame;
 import com.eas.ui.user.UserDashboardFrame;
 import com.eas.util.*;
 import java.awt.*;
+import java.sql.SQLException;
 import javax.swing.*;
 
 public class LoginFrame extends JFrame {
@@ -69,7 +70,7 @@ public class LoginFrame extends JFrame {
             if (session.isAdmin()) new AdminDashboardFrame(session).setVisible(true);
             else                   new UserDashboardFrame(session).setVisible(true);
 
-        } catch (Exception ex) {
+        } catch (SQLException ex) {
             Dialogs.error(this, ex.getMessage());
         }
     }
@@ -78,7 +79,7 @@ public class LoginFrame extends JFrame {
         try {
             boolean ok = Database.testConnection();
             Dialogs.info(this, ok ? "Database connection successful." : "Database connection failed.");
-        } catch (Exception ex) {
+        } catch (SQLException ex) {
             Dialogs.error(this, ex.getMessage());
         }
     }

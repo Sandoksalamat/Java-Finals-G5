@@ -1,4 +1,3 @@
-
 package com.eas.ui.admin;
 
 import com.eas.config.Database;
@@ -32,7 +31,7 @@ public class OffSiteApprovalPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Review Active Hybrid & Duty Exception Applications"));
 
-        modelRequests = new DefaultTableModel(new String[]{"ID", "Emp ID", "Type", "Start Date", "End Date", "Location/Client", "Status"}, 0);
+        modelRequests = new DefaultTableModel(new String[]{"id", "request_type", "Emp ID", "employee_id", "Type", "Start Date", "End Date", "Location/Client", "Status"}, 0);
         requestsTable = new JTable(modelRequests);
         panel.add(new JScrollPane(requestsTable), BorderLayout.CENTER);
 
@@ -64,12 +63,35 @@ public class OffSiteApprovalPanel extends JPanel {
         verifyBtn.addActionListener(e -> {
             int row = verifyTable.getSelectedRow();
             if (row != -1) {
-                int empId = (int) modelVerify.getValueAt(row, 0);
-                LocalDate date = LocalDate.parse(modelVerify.getValueAt(row, 1).toString());
-                if (service.verifyAccomplishment(empId, date, sessionManagerId, "VERIFIED", "Approved via Dashboard context execution.")) {
-                    JOptionPane.showMessageDialog(this, "Day closed and authorized for processing.");
-                    refreshDataViews();
+                try {
+                    int empId = Integer.parseInt(modelVerify.getValueAt(row, 0).toString().trim());
+                    Object dateObj = modelVerify.getValueAt(row, 1);
+                    LocalDate date;
+                    if (dateObj instanceof java.sql.Date) {
+                        date = ((java.sql.Date) dateObj).toLocalDate();
+                    } else if (dateObj instanceof java.sql.Timestamp) {
+                        date = ((java.sql.Timestamp) dateObj).toLocalDateTime().toLocalDate();
+                    } else if (dateObj instanceof java.util.Date) {
+                        date = new java.sql.Date(((java.util.Date) dateObj).getTime()).toLocalDate();
+                    } else {
+                        date = LocalDate.parse(dateObj.toString());
+                    }
+                    System.out.println("SENDING TO VERIFY -> empId=" + empId + ", date=" + date);
+
+                    if (service.verifyAccomplishment(empId, date, sessionManagerId, "VERIFIED", "Approved via Dashboard context execution.")) {
+                        JOptionPane.showMessageDialog(this, "Day closed and authorized for processing.");
+                        refreshDataViews();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Verification failed — no matching record found.",
+                            "Verification Failed", JOptionPane.WARNING_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(),
+                        "Unexpected Error", JOptionPane.ERROR_MESSAGE);
                 }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a row first.");
             }
         });
 
@@ -87,10 +109,9 @@ public class OffSiteApprovalPanel extends JPanel {
         }
     }
 
-    public void refreshDataViews() {
+    private void refreshDataViews() {
         modelRequests.setRowCount(0);
         modelVerify.setRowCount(0);
-
         try (Connection conn = Database.getConnection()) {
 
             Statement st1 = conn.createStatement();

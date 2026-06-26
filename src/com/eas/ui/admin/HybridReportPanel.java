@@ -3,11 +3,10 @@ package com.eas.ui.admin;
 
 import com.eas.model.HybridReportRow;
 import com.eas.service.HybridAttendanceService;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class HybridReportPanel extends JPanel {
     private final HybridAttendanceService service = new HybridAttendanceService();

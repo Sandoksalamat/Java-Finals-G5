@@ -1,25 +1,23 @@
-
 package com.eas.ui.user;
 
+import com.eas.model.OffSiteAccomplishment;
 import com.eas.model.OffSiteRequest;
 import com.eas.model.UserSession;
-import com.eas.model.OffSiteAccomplishment;
 import com.eas.service.HybridAttendanceService;
-
-import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
+import javax.swing.*;
 
 public class OffSiteRequestPanel extends JPanel {
     private final HybridAttendanceService service = new HybridAttendanceService();
-    private final int currentEmployeeId;
+    private final int currentUserId;
     private JComboBox<String> typeCombo;
     private JTextField startField, endField, locationField, purposeField;
     private JTextField latField, lngField, fileField;
     private JTextArea accomplishmentArea;
 
     public OffSiteRequestPanel(UserSession session) {
-        this.currentEmployeeId = session.getId();
+        this.currentUserId = session.getId();
 
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -56,24 +54,21 @@ public class OffSiteRequestPanel extends JPanel {
         submitBtn.addActionListener(e -> {
             try {
                 OffSiteRequest req = new OffSiteRequest();
-                req.setEmployeeId(currentEmployeeId);
                 req.setRequestType((String) typeCombo.getSelectedItem());
                 req.setStartDate(LocalDate.parse(startField.getText().trim()));
                 req.setEndDate(LocalDate.parse(endField.getText().trim()));
                 req.setDestinationOrLocation(locationField.getText().trim());
                 req.setPurpose(purposeField.getText().trim());
 
-                if (service.submitOffSiteRequest(req)) {
+                if (service.submitOffSiteRequest(currentUserId, req)) {
                     JOptionPane.showMessageDialog(this, "Application filed successfully! Awaiting supervisor signature.");
                 } else {
                     JOptionPane.showMessageDialog(this, "Submission failed. Ensure date strings fit YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (java.time.format.DateTimeParseException ex) {
                 JOptionPane.showMessageDialog(this, "Format Error: Please use the absolute YYYY-MM-DD format.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Validation Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
+            } 
+    });
 
         return panel;
     }
@@ -89,8 +84,8 @@ public class OffSiteRequestPanel extends JPanel {
         JButton timeInBtn = new JButton("Remote TIME IN");
         JButton timeOutBtn = new JButton("Remote TIME OUT");
 
-        timeInBtn.setBackground(new Color(46, 139, 87)); timeInBtn.setForeground(Color.BLACK);
-        timeOutBtn.setBackground(new Color(178, 34, 34)); timeOutBtn.setForeground(Color.BLACK);
+        timeInBtn.setBackground(new Color(46, 139, 87)); timeInBtn.setForeground(Color.WHITE);
+        timeOutBtn.setBackground(new Color(178, 34, 34)); timeOutBtn.setForeground(Color.WHITE);
 
         gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Latitude:"), gbc);
         gbc.gridx = 1; panel.add(latField, gbc);
@@ -145,12 +140,11 @@ public class OffSiteRequestPanel extends JPanel {
 
         submitDocBtn.addActionListener(e -> {
             OffSiteAccomplishment report = new OffSiteAccomplishment();
-            report.setEmployeeId(currentEmployeeId);
             report.setAttendanceDate(LocalDate.now());
             report.setAccomplishmentText(accomplishmentArea.getText().trim());
             report.setDocumentPath(fileField.getText().trim());
 
-            if (service.submitAccomplishment(report)) {
+            if (service.submitAccomplishment(currentUserId, report)) {
                 JOptionPane.showMessageDialog(this, "Accomplishment summary saved successfully!");
                 accomplishmentArea.setText(""); fileField.setText("");
             } else {
@@ -162,16 +156,20 @@ public class OffSiteRequestPanel extends JPanel {
     }
 
     private void fireClockEvent(String logType) {
-        double lat = Double.parseDouble(latField.getText());
-        double lng = Double.parseDouble(lngField.getText());
+    try {
+        double lat = Double.parseDouble(latField.getText().trim());
+        double lng = Double.parseDouble(lngField.getText().trim());
         
-        boolean success = service.processMobileClockEvent(currentEmployeeId, logType, lat, lng, null);
+        boolean success = service.processMobileClockEvent(currentUserId, logType, lat, lng, null);
         if (success) {
             JOptionPane.showMessageDialog(this, "Remote coordinate transaction log established for: " + logType);
         } else {
             JOptionPane.showMessageDialog(this, "Transaction Rejected: Ensure you have an active APPROVED offsite application for today.", "Access Denied", JOptionPane.WARNING_MESSAGE);
         }
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "Invalid coordinates format. Please check Latitude and Longitude values.", "Input Error", JOptionPane.ERROR_MESSAGE);
     }
+}
 
     private void addGridRow(JPanel p, GridBagConstraints gbc, int y, String label, Component comp) {
         gbc.gridx = 0; gbc.gridy = y; gbc.gridwidth = 1; p.add(new JLabel(label), gbc);

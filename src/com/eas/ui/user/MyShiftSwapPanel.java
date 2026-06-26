@@ -1,6 +1,7 @@
 package com.eas.ui.user;
 
 import com.eas.model.UserSession;
+import com.eas.ui.user.EmployeeVolunteerPanel; // Siguraduhing nandito ang import
 import java.awt.*;
 import java.sql.*;
 import javax.swing.*;
@@ -8,7 +9,7 @@ import javax.swing.table.DefaultTableModel;
 
 public class MyShiftSwapPanel extends JPanel {
 
-    private UserSession session;
+    private final UserSession session;
     private JTable requestTable;
     private DefaultTableModel tableModel;
     private JTextField txtTargetEmployeeId;
