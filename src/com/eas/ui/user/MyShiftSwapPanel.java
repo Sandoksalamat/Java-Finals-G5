@@ -1,7 +1,6 @@
 package com.eas.ui.user;
 
 import com.eas.model.UserSession;
-import com.eas.ui.user.EmployeeVolunteerPanel; // Siguraduhing nandito ang import
 import java.awt.*;
 import java.sql.*;
 import javax.swing.*;
@@ -18,11 +17,12 @@ public class MyShiftSwapPanel extends JPanel {
 
     public MyShiftSwapPanel(UserSession s) {
         this.session = s;
-        setLayout(new BorderLayout()); // Border layout para sa JTabbedPane
+        setLayout(new BorderLayout(15, 15));
         setBackground(Color.WHITE);
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         resolveEmployeeId();
-        initUI(); // Dito natin pagsasamahin ang lahat
+        initComponent();
         refreshTableData();
     }
 
@@ -32,19 +32,16 @@ public class MyShiftSwapPanel extends JPanel {
             ps.setInt(1, session.getId());
             ResultSet rs = ps.executeQuery();
             if (rs.next()) currentEmployeeId = rs.getInt("id");
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void initUI() {
-        JTabbedPane tabbedPane = new JTabbedPane();
-
-        // --- TAB 1: Shift Swap Request ---
-        JPanel swapPanel = new JPanel(new BorderLayout(15, 15));
-        swapPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        swapPanel.setBackground(Color.WHITE);
-
+    private void initComponent() {
         JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(Color.WHITE);
         formPanel.setBorder(BorderFactory.createTitledBorder("Create Shift Exchange Request"));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -69,25 +66,63 @@ public class MyShiftSwapPanel extends JPanel {
         tableModel = new DefaultTableModel(new String[]{"ID", "Target ID", "Reason", "Status"}, 0);
         requestTable = new JTable(tableModel);
         
-        swapPanel.add(formPanel, BorderLayout.WEST);
-        swapPanel.add(new JScrollPane(requestTable), BorderLayout.CENTER);
-
-        // --- TAB 2: Volunteer ---
-        // Ipinapasa natin ang session.getId() para sa volunteer logic
-        EmployeeVolunteerPanel volunteerPanel = new EmployeeVolunteerPanel(session.getId());
-
-        tabbedPane.addTab("Shift Swap", swapPanel);
-        tabbedPane.addTab("Volunteer for Open Shifts", volunteerPanel);
-
-        add(tabbedPane, BorderLayout.CENTER);
+        add(formPanel, BorderLayout.WEST);
+        add(new JScrollPane(requestTable), BorderLayout.CENTER);
     }
 
     private void submitRequest() {
-        // ... (Kopyahin ang dati mong code sa submitRequest dito) ...
-        // Siguraduhing tama ang INSERT statement base sa database structure mo
+        if (currentEmployeeId == -1) {
+            JOptionPane.showMessageDialog(this, "Employee ID not found.");
+            return;
+        }
+
+        try {
+            int targetId = Integer.parseInt(txtTargetEmployeeId.getText().trim());
+            String reason = txtReason.getText().trim();
+
+            if (reason.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Reason cannot be empty.");
+                return;
+            }
+
+            try (Connection conn = com.eas.config.Database.getConnection();
+                PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO shift_swaps (employee_id, target_employee_id, schedule_id, reason, status) VALUES (?, ?, 1, ?, 'PENDING')")) {
+                ps.setInt(1, currentEmployeeId);
+                ps.setInt(2, targetId);
+                ps.setString(3, reason);
+                ps.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Request submitted successfully!");
+                txtTargetEmployeeId.setText("");
+                txtReason.setText("");
+                refreshTableData();
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Invalid Employee ID format.");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public void refreshTableData() {
-        // ... (Kopyahin ang dati mong code sa refreshTableData dito) ...
+        tableModel.setRowCount(0);
+        try (Connection conn = com.eas.config.Database.getConnection();
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT id, target_employee_id, reason, status FROM shift_swaps WHERE employee_id = ?")) {
+            ps.setInt(1, currentEmployeeId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                tableModel.addRow(new Object[]{
+                    rs.getInt("id"),
+                    rs.getInt("target_employee_id"),
+                    rs.getString("reason"),
+                    rs.getString("status")
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
