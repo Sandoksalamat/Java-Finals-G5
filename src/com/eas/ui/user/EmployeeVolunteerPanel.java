@@ -43,10 +43,7 @@ public class EmployeeVolunteerPanel extends JPanel {
 
     private void loadOpenShifts() {
         tableModel.setRowCount(0);
-        String query = "SELECT dsr.shift_id, dsr.department_id, dsr.min_required_staff, " +
-                       "(SELECT COUNT(*) FROM shift_assignments sa WHERE sa.shift_id = dsr.shift_id) as assigned_count " +
-                       "FROM department_staffing_requirements dsr " +
-                       "HAVING assigned_count < dsr.min_required_staff";
+        String query = "SELECT id, shift_id, shift_date FROM open_shifts WHERE is_taken = 0";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(query);
@@ -54,11 +51,13 @@ public class EmployeeVolunteerPanel extends JPanel {
             while (rs.next()) {
                 tableModel.addRow(new Object[]{
                     rs.getInt("shift_id"), 
-                    "2026-06-26", 
-                    rs.getInt("department_id")
+                    rs.getString("shift_date"), 
+                    "N/A"
                 });
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) { 
+            e.printStackTrace(); 
+        }
     }
 
     private void handleVolunteer() {
