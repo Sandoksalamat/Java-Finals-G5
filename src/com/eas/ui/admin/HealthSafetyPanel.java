@@ -6,7 +6,6 @@ import com.eas.service.AuditService;
 import com.eas.util.CsvExporter;
 import com.eas.util.Dialogs;
 import com.eas.util.UITheme;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -69,7 +68,6 @@ public class HealthSafetyPanel extends JPanel {
     private final JTextField resIdField       = new JTextField(5);
     private final JTextField resEmpIdField    = new JTextField(8);
     private final JTextField resIncIdField    = new JTextField(8);
-    private final JTextField resRtwIdField    = new JTextField(8);
     private final JTextField resTypeField     = new JTextField(20);
     private final JTextField resStartField    = new JTextField(10);
     private final JTextField resEndField      = new JTextField(10);
@@ -161,6 +159,7 @@ public class HealthSafetyPanel extends JPanel {
             if (!e.getValueIsAdjusting()) {
                 populateIncidentForm();
                 loadRestrictionsForSelectedIncident();
+                resIncIdField.setText(incIdField.getText());
             }
         });
 
@@ -284,7 +283,6 @@ public class HealthSafetyPanel extends JPanel {
         addField(form, g, 0,  "ID",               resIdField);
         addField(form, g, 1,  "Employee ID",       resEmpIdField);
         addField(form, g, 2,  "Incident ID",       resIncIdField);
-        addField(form, g, 3,  "RTW Clearance ID",  resRtwIdField);
         addField(form, g, 4,  "Restriction Type",  resTypeField);
         addField(form, g, 5,  "Start Date",        resStartField);
         addField(form, g, 6,  "End Date",          resEndField);
@@ -319,7 +317,7 @@ public class HealthSafetyPanel extends JPanel {
 
         JLabel hint = new JLabel(
             "  RED = Active restriction    GREEN = Lifted    GREY = Expired    " +
-            "Incident ID and RTW Clearance ID are optional links."
+            "Incident ID is an optional link."
         );
         hint.setFont(new Font("SansSerif", Font.ITALIC, 11));
         hint.setForeground(Color.GRAY);
@@ -403,7 +401,7 @@ public class HealthSafetyPanel extends JPanel {
 
         String sql =
             "SELECT mr.id, mr.employee_id, u.full_name, e.employee_no, " +
-            "       mr.incident_id, mr.rtw_clearance_id, mr.restriction_type, " +
+            "       mr.incident_id, mr.restriction_type, " +
             "       mr.start_date, mr.end_date, mr.status, " +
             "       mr.prescribed_by, mr.details, mr.admin_remarks, mr.created_at " +
             "FROM medical_restrictions mr " +
@@ -428,7 +426,7 @@ public class HealthSafetyPanel extends JPanel {
     private void loadAllRestrictions() {
         String sql =
             "SELECT mr.id, mr.employee_id, u.full_name, e.employee_no, " +
-            "       mr.incident_id, mr.rtw_clearance_id, mr.restriction_type, " +
+            "       mr.incident_id, mr.restriction_type, " +
             "       mr.start_date, mr.end_date, mr.status, " +
             "       mr.prescribed_by, mr.details, mr.admin_remarks, mr.created_at " +
             "FROM medical_restrictions mr " +
@@ -451,7 +449,7 @@ public class HealthSafetyPanel extends JPanel {
     private String[] restrictionHeaders() {
         return new String[]{
             "ID","Emp ID","Full Name","Emp No",
-            "Incident ID","RTW ID","Restriction Type",
+            "Incident ID", "Restriction Type",
             "Start Date","End Date","Status",
             "Prescribed By","Details","Admin Remarks","Created At"
         };
@@ -505,7 +503,6 @@ public class HealthSafetyPanel extends JPanel {
         resIdField.setText(      safeStr(dm.getValueAt(m, 0)));
         resEmpIdField.setText(   safeStr(dm.getValueAt(m, 1)));
         resIncIdField.setText(   safeStr(dm.getValueAt(m, 4)));
-        resRtwIdField.setText(   safeStr(dm.getValueAt(m, 5)));
         resTypeField.setText(    safeStr(dm.getValueAt(m, 6)));
         resStartField.setText(   safeStr(dm.getValueAt(m, 7)));
         resEndField.setText(     safeStr(dm.getValueAt(m, 8)));
@@ -550,12 +547,19 @@ public class HealthSafetyPanel extends JPanel {
             clearIncidentForm();
             loadIncidents("");
             Dialogs.info(this, "Incident reported.");
-
-        } catch (NumberFormatException nfe) {
-            Dialogs.error(this, "Employee ID must be numeric.");
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
-        }
+              } catch (SQLException sqlEx) {
+    if (sqlEx.getErrorCode() == 1452) {
+        Dialogs.error(this,
+            "The Incident ID you entered does not exist.\n" +
+            "Please select a valid incident from the table above, or leave the field blank.");
+    } else {
+        Dialogs.error(this, sqlEx.getMessage());
+    }
+} catch (NumberFormatException nfe) {
+    Dialogs.error(this, "Employee ID, Incident ID must be numeric.");
+} catch (Exception ex) {
+    Dialogs.error(this, ex.getMessage());
+}
     }
 
     private void updateIncident() {
@@ -682,29 +686,33 @@ public class HealthSafetyPanel extends JPanel {
 
         String sql =
             "INSERT INTO medical_restrictions " +
-            "(employee_id, incident_id, rtw_clearance_id, restriction_type, " +
-            " start_date, end_date, prescribed_by, details, status, admin_remarks) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "(employee_id, incident_id, restriction_type, " +
+            "start_date, end_date, prescribed_by, details, status, admin_remarks) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection c  = Database.getConnection();
              PreparedStatement p = c.prepareStatement(sql)) {
 
             p.setInt(1, Integer.parseInt(resEmpIdField.getText().trim()));
+            p.setInt(1, Integer.parseInt(resEmpIdField.getText().trim()));
 
             setNullableInt(p, 2, resIncIdField.getText().trim());
-            setNullableInt(p, 3, resRtwIdField.getText().trim());
 
-            p.setString(4, resTypeField.getText().trim());
-            p.setString(5, resStartField.getText().trim());
+            p.setString(3, resTypeField.getText().trim());
+            p.setString(4, resStartField.getText().trim());
 
             String end = resEndField.getText().trim();
-            if (end.isEmpty()) p.setNull(6, Types.DATE);
-            else               p.setString(6, end);
 
-            p.setString(7, resPrescField.getText().trim());
-            p.setString(8, resDetailsArea.getText().trim());
-            p.setString(9, resStatusBox.getSelectedItem().toString());
-            p.setString(10, resRemarksField.getText().trim());
+            if (end.isEmpty()) {
+                p.setNull(5, Types.DATE);
+            } else {
+                p.setString(5, end);
+            }
+
+            p.setString(6, resPrescField.getText().trim());
+            p.setString(7, resDetailsArea.getText().trim());
+            p.setString(8, resStatusBox.getSelectedItem().toString());
+            p.setString(9, resRemarksField.getText().trim());
 
             p.executeUpdate();
             AuditService.log(session.getId(), "CREATE", "MEDICAL_RESTRICTION",
@@ -714,7 +722,7 @@ public class HealthSafetyPanel extends JPanel {
             Dialogs.info(this, "Medical restriction added.");
 
         } catch (NumberFormatException nfe) {
-            Dialogs.error(this, "Employee ID, Incident ID and RTW ID must be numeric.");
+            Dialogs.error(this, "Employee ID, Incident ID must be numeric.");
         } catch (Exception ex) {
             Dialogs.error(this, ex.getMessage());
         }
@@ -728,7 +736,7 @@ public class HealthSafetyPanel extends JPanel {
 
         String sql =
             "UPDATE medical_restrictions SET " +
-            "employee_id=?, incident_id=?, rtw_clearance_id=?, restriction_type=?, " +
+            "employee_id=?, incident_id=?, restriction_type=?, " +
             "start_date=?, end_date=?, prescribed_by=?, details=?, " +
             "status=?, admin_remarks=? WHERE id=?";
 
@@ -736,20 +744,24 @@ public class HealthSafetyPanel extends JPanel {
              PreparedStatement p = c.prepareStatement(sql)) {
 
             p.setInt(1, Integer.parseInt(resEmpIdField.getText().trim()));
+
             setNullableInt(p, 2, resIncIdField.getText().trim());
-            setNullableInt(p, 3, resRtwIdField.getText().trim());
-            p.setString(4, resTypeField.getText().trim());
-            p.setString(5, resStartField.getText().trim());
+
+            p.setString(3, resTypeField.getText().trim());
+            p.setString(4, resStartField.getText().trim());
 
             String end = resEndField.getText().trim();
-            if (end.isEmpty()) p.setNull(6, Types.DATE);
-            else               p.setString(6, end);
 
-            p.setString(7,  resPrescField.getText().trim());
-            p.setString(8,  resDetailsArea.getText().trim());
-            p.setString(9,  resStatusBox.getSelectedItem().toString());
-            p.setString(10, resRemarksField.getText().trim());
-            p.setInt(11,    Integer.parseInt(resIdField.getText().trim()));
+            if (end.isEmpty()) {
+                p.setNull(5, Types.DATE);
+            } else {
+                p.setString(5, end);
+            }
+
+            p.setString(6, resPrescField.getText().trim());
+            p.setString(7, resDetailsArea.getText().trim());
+            p.setString(8, resStatusBox.getSelectedItem().toString());
+            p.setString(9, resRemarksField.getText().trim());
 
             p.executeUpdate();
             AuditService.log(session.getId(), "UPDATE", "MEDICAL_RESTRICTION",
@@ -759,7 +771,7 @@ public class HealthSafetyPanel extends JPanel {
             Dialogs.info(this, "Restriction updated.");
 
         } catch (NumberFormatException nfe) {
-            Dialogs.error(this, "Employee ID, Incident ID and RTW ID must be numeric.");
+            Dialogs.error(this, "Employee ID, Incident ID must be numeric.");
         } catch (Exception ex) {
             Dialogs.error(this, ex.getMessage());
         }
@@ -818,7 +830,6 @@ public class HealthSafetyPanel extends JPanel {
         resIdField.setText("");
         resEmpIdField.setText("");
         resIncIdField.setText("");
-        resRtwIdField.setText("");
         resTypeField.setText("");
         resStartField.setText(LocalDate.now().format(DateTimeFormatter.ISO_DATE));
         resEndField.setText("");

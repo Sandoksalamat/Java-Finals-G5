@@ -7,17 +7,12 @@ import com.eas.util.UITheme;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.FlowLayout;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JLabel;
-import javax.swing.JButton;
-import javax.swing.JTabbedPane;
 import javax.swing.BorderFactory;
-import javax.swing.JOptionPane;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
 
 public class UserDashboardFrame extends JFrame {
 
@@ -78,6 +73,7 @@ public class UserDashboardFrame extends JFrame {
         tabs.addTab("Sick Record", new MySickRecordPanel(s));
         tabs.addTab("Wellness Programs", new MyWellnessPanel(s));
         tabs.addTab("RTW Clearance", new MyRTWClearancePanel(s));
+        
         tabs.addTab("Notifications", new NotificationPanel(s));
         tabs.addTab("Messages",      new UserMessagePanel(s));
         tabs.addTab("Profile",       new UserProfilePanel(s));
