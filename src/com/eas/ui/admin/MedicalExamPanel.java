@@ -9,11 +9,13 @@ import com.eas.util.UITheme;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Window;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -46,51 +48,81 @@ public class MedicalExamPanel extends JPanel {
 
     private final UserSession session;
 
-    // ── Table ─────────────────────────────────────────────────────────────────
-    private final JTable     table       = new JTable();
+    private final JTable table = new JTable();
     private final JTextField searchField = new JTextField(20);
 
-    // ── Form — identity ───────────────────────────────────────────────────────
-    private final JTextField  idField         = new JTextField(5);
-    private final JTextField  empIdField      = new JTextField(8);
-    private final JComboBox<String> typeBox   = new JComboBox<>(new String[]{
-        "PRE_EMPLOYMENT", "ANNUAL", "RETURN_TO_WORK", "SPECIAL"
-    });
-    private final JTextField  examDateField   = new JTextField(10);
-    private final JTextField  physicianField  = new JTextField(20);
-    private final JTextField  facilityField   = new JTextField(20);
+    private final JTextField idField = new JTextField(5);
+    private final JTextField empIdField = new JTextField(8);
 
-    // ── Form — vitals ─────────────────────────────────────────────────────────
-    private final JComboBox<String> bloodTypeBox = new JComboBox<>(new String[]{
-        "", "A+","A-","AB+","AB-","B+","B-","O+","O-"
-    });
-    private final JTextField  bpField         = new JTextField(8);
-    private final JTextField  hrField         = new JTextField(5);
-    private final JTextField  heightField     = new JTextField(6);
-    private final JTextField  weightField     = new JTextField(6);
+    private final JComboBox<String> typeBox = new JComboBox<>(
+        new String[]{
+            "PRE_EMPLOYMENT",
+            "ANNUAL",
+            "SPECIAL"
+        }
+    );
 
-    // ── Form — test results ───────────────────────────────────────────────────
-    private final JTextField  visionLField    = new JTextField(8);
-    private final JTextField  visionRField    = new JTextField(8);
-    private final JTextField  hearingLField   = new JTextField(10);
-    private final JTextField  hearingRField   = new JTextField(10);
-    private final JTextField  xrayField       = new JTextField(12);
-    private final JTextField  urineField      = new JTextField(12);
-    private final JTextField  cbcField        = new JTextField(12);
+    private final JTextField examDateField = new JTextField(10);
+    private final JTextField physicianField = new JTextField(20);
+    private final JTextField facilityField = new JTextField(20);
 
-    // ── Form — summary ────────────────────────────────────────────────────────
-    private final JTextArea   findingsArea    = new JTextArea(2, 22);
-    private final JTextArea   recommendArea   = new JTextArea(2, 22);
-    private final JCheckBox   fitBox          = new JCheckBox("Fit to Work", true);
-    private final JComboBox<String> statusBox = new JComboBox<>(new String[]{
-        "PENDING", "COMPLETED", "FLAGGED"
-    });
-    private final JTextField  remarksField    = new JTextField(20);
+    private final JComboBox<String> bloodTypeBox = new JComboBox<>(
+        new String[]{
+            "",
+            "A+",
+            "A-",
+            "AB+",
+            "AB-",
+            "B+",
+            "B-",
+            "O+",
+            "O-"
+        }
+    );
+
+    private final JTextField bpField = new JTextField(8);
+    private final JTextField hrField = new JTextField(5);
+    private final JTextField heightField = new JTextField(6);
+    private final JTextField weightField = new JTextField(6);
+
+    private final JTextField visionLField = new JTextField(8);
+    private final JTextField visionRField = new JTextField(8);
+    private final JTextField hearingLField = new JTextField(10);
+    private final JTextField hearingRField = new JTextField(10);
+    private final JTextField xrayField = new JTextField(12);
+    private final JTextField urineField = new JTextField(12);
+    private final JTextField cbcField = new JTextField(12);
+
+    private final JTextArea findingsArea = new JTextArea(2, 22);
+    private final JTextArea recommendArea = new JTextArea(2, 22);
+
+    private final JCheckBox fitBox =
+        new JCheckBox("Fit to Work", true);
+
+    private final JComboBox<String> statusBox = new JComboBox<>(
+        new String[]{
+            "PENDING",
+            "COMPLETED",
+            "FLAGGED"
+        }
+    );
+
+    private final JTextField remarksField = new JTextField(20);
+
+    private int labelRow = 0;
 
     public MedicalExamPanel(UserSession session) {
         this.session = session;
+
         setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        setBorder(
+            BorderFactory.createEmptyBorder(
+                12,
+                12,
+                12,
+                12
+            )
+        );
 
         add(buildTopBar(), BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
@@ -100,400 +132,1248 @@ public class MedicalExamPanel extends JPanel {
         load("");
     }
 
-    // ── Top bar ───────────────────────────────────────────────────────────────
-
     private JPanel buildTopBar() {
         JPanel top = new JPanel(new BorderLayout());
-        top.add(UITheme.title("Medical Examination Records"), BorderLayout.WEST);
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        top.add(
+            UITheme.title("Medical Examination Records"),
+            BorderLayout.WEST
+        );
+
+        JPanel right = new JPanel(
+            new FlowLayout(FlowLayout.RIGHT)
+        );
+
         right.add(new JLabel("Search:"));
         right.add(searchField);
 
-        JButton btnSearch  = UITheme.button("SEARCH");
-        JButton btnRefresh = UITheme.button("REFRESH");
-        JButton btnExport  = UITheme.button("EXPORT CSV");
-        JButton btnView    = UITheme.button("VIEW");
+        JButton searchButton = UITheme.button("SEARCH");
+        JButton refreshButton = UITheme.button("REFRESH");
+        JButton viewButton = UITheme.button("VIEW");
+        JButton exportButton = UITheme.button("EXPORT CSV");
 
-        btnSearch.addActionListener(e  -> load(searchField.getText()));
-        btnRefresh.addActionListener(e -> { searchField.setText(""); load(""); });
-        btnExport.addActionListener(e  -> export());
-        btnView.addActionListener(e    -> showSelectedRecord());
+        searchButton.addActionListener(
+            event -> load(searchField.getText())
+        );
 
-        right.add(btnSearch);
-        right.add(btnRefresh);
-        right.add(btnView);
-        right.add(btnExport);
+        refreshButton.addActionListener(event -> {
+            searchField.setText("");
+            load("");
+        });
+
+        viewButton.addActionListener(
+            event -> showSelectedRecord()
+        );
+
+        exportButton.addActionListener(
+            event -> export()
+        );
+
+        right.add(searchButton);
+        right.add(refreshButton);
+        right.add(viewButton);
+        right.add(exportButton);
+
         top.add(right, BorderLayout.EAST);
+
         return top;
     }
 
-    // ── Table styling ─────────────────────────────────────────────────────────
-
     private void styleTable() {
         table.setRowHeight(24);
-        table.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
+
+        table.setFont(
+            new Font(
+                "SansSerif",
+                Font.PLAIN,
+                12
+            )
+        );
+
+        table.getTableHeader().setFont(
+            new Font(
+                "SansSerif",
+                Font.BOLD,
+                12
+            )
+        );
+
         table.setAutoCreateRowSorter(true);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setSelectionMode(
+            ListSelectionModel.SINGLE_SELECTION
+        );
 
-        // Colour by status: FLAGGED=red, COMPLETED=green, PENDING=yellow
-        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(
-                    JTable t, Object val, boolean sel, boolean focus, int row, int col) {
-                super.getTableCellRendererComponent(t, val, sel, focus, row, col);
-                if (!sel) {
-                    int mr = t.convertRowIndexToModel(row);
-                    Object sv = t.getModel().getValueAt(mr, 20); // status col
-                    String s  = sv == null ? "" : sv.toString();
-                    switch (s) {
-                        case "FLAGGED":   setBackground(new Color(255, 224, 224)); break;
-                        case "COMPLETED": setBackground(new Color(220, 255, 220)); break;
-                        default:          setBackground(new Color(255, 243, 200));
+        table.setDefaultRenderer(
+            Object.class,
+            new DefaultTableCellRenderer() {
+
+                @Override
+                public Component getTableCellRendererComponent(
+                        JTable target,
+                        Object value,
+                        boolean selected,
+                        boolean focused,
+                        int row,
+                        int column
+                ) {
+                    super.getTableCellRendererComponent(
+                        target,
+                        value,
+                        selected,
+                        focused,
+                        row,
+                        column
+                    );
+
+                    if (!selected) {
+                        int modelRow =
+                            target.convertRowIndexToModel(row);
+
+                        Object statusValue =
+                            target.getModel().getValueAt(
+                                modelRow,
+                                20
+                            );
+
+                        String status =
+                            statusValue == null
+                                ? ""
+                                : statusValue.toString();
+
+                        switch (status) {
+                            case "FLAGGED":
+                                setBackground(
+                                    new Color(255, 224, 224)
+                                );
+                                break;
+
+                            case "COMPLETED":
+                                setBackground(
+                                    new Color(220, 255, 220)
+                                );
+                                break;
+
+                            default:
+                                setBackground(
+                                    new Color(255, 243, 200)
+                                );
+                                break;
+                        }
+
+                    } else {
+                        setBackground(
+                            target.getSelectionBackground()
+                        );
                     }
-                } else {
-                    setBackground(t.getSelectionBackground());
+
+                    return this;
                 }
-                return this;
             }
-        });
+        );
 
-        table.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) populateForm();
-        });
+        table.getSelectionModel()
+            .addListSelectionListener(event -> {
+                if (!event.getValueIsAdjusting()) {
+                    populateForm();
+                }
+            });
     }
-
-    // ── Form ──────────────────────────────────────────────────────────────────
 
     private JPanel buildForm() {
         idField.setEditable(false);
+        labelRow = 0;
 
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBorder(BorderFactory.createTitledBorder(
-            "Examination Record Entry / Edit"));
+        findingsArea.setLineWrap(true);
+        findingsArea.setWrapStyleWord(true);
 
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets    = new Insets(3, 5, 3, 5);
-        g.fill      = GridBagConstraints.HORIZONTAL;
-        g.gridwidth = 1;
+        recommendArea.setLineWrap(true);
+        recommendArea.setWrapStyleWord(true);
 
-        // Row 0-1: identity fields
-        addField(form, g, 0,  "ID",           idField);
-        addField(form, g, 1,  "Employee ID",  empIdField);
-        addField(form, g, 2,  "Exam Type",    typeBox);
-        addField(form, g, 3,  "Exam Date",    examDateField);
-        addField(form, g, 4,  "Physician",    physicianField);
-        addField(form, g, 5,  "Facility",     facilityField);
+        JPanel form = new JPanel(
+            new GridBagLayout()
+        );
 
-        // Row 2-3: vitals
-        addField(form, g, 0,  "Blood Type",   bloodTypeBox);
-        advanceRow(g);
-        addField(form, g, 1,  "BP (mmHg)",    bpField);
-        addField(form, g, 2,  "Heart Rate",   hrField);
-        addField(form, g, 3,  "Height (cm)",  heightField);
-        addField(form, g, 4,  "Weight (kg)",  weightField);
+        form.setBorder(
+            BorderFactory.createTitledBorder(
+                "Examination Record Entry / Edit"
+            )
+        );
 
-        // Row 4-5: test results
-        addField(form, g, 0,  "Vision L",     visionLField);
-        advanceRow(g);
-        addField(form, g, 1,  "Vision R",     visionRField);
-        addField(form, g, 2,  "Hearing L",    hearingLField);
-        addField(form, g, 3,  "Hearing R",    hearingRField);
-        addField(form, g, 4,  "Chest X-Ray",  xrayField);
-        addField(form, g, 5,  "Urinalysis",   urineField);
-        addField(form, g, 6,  "CBC",          cbcField);
+        GridBagConstraints constraints =
+            new GridBagConstraints();
 
-        // Row 6-7: summary
-        addField(form, g, 0,  "Status",       statusBox);
-        advanceRow(g);
-        addField(form, g, 1,  "Fit to Work",  fitBox);
-        addField(form, g, 2,  "Admin Remarks", remarksField);
+        constraints.insets =
+            new Insets(3, 5, 3, 5);
 
-        // Text areas span more space
-        addTextArea(form, g, 3, "Physician Findings", findingsArea);
-        addTextArea(form, g, 4, "Recommendations",    recommendArea);
+        constraints.fill =
+            GridBagConstraints.HORIZONTAL;
 
-        // Buttons
-        JButton btnAdd      = UITheme.button("ADD");
-        JButton btnUpdate   = UITheme.button("UPDATE");
-        JButton btnComplete = UITheme.button("MARK COMPLETED");
-        JButton btnFlag     = UITheme.button("FLAG");
-        JButton btnDelete   = UITheme.button("DELETE");
-        JButton btnClear    = UITheme.button("CLEAR");
+        constraints.gridwidth = 1;
 
-        btnAdd.addActionListener(e      -> insertRecord());
-        btnUpdate.addActionListener(e   -> updateRecord());
-        btnComplete.addActionListener(e -> setStatus("COMPLETED"));
-        btnFlag.addActionListener(e     -> setStatus("FLAGGED"));
-        btnDelete.addActionListener(e   -> deleteRecord());
-        btnClear.addActionListener(e    -> clearForm());
+        addField(
+            form,
+            constraints,
+            0,
+            "ID",
+            idField
+        );
 
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        btns.add(btnAdd); btns.add(btnUpdate);
-        btns.add(btnComplete); btns.add(btnFlag);
-        btns.add(btnDelete); btns.add(btnClear);
+        addField(
+            form,
+            constraints,
+            1,
+            "Employee ID",
+            empIdField
+        );
 
-        g.gridx = 0; g.gridy = g.gridy + 2; g.gridwidth = 12;
-        form.add(btns, g);
+        addField(
+            form,
+            constraints,
+            2,
+            "Exam Type",
+            typeBox
+        );
+
+        addField(
+            form,
+            constraints,
+            3,
+            "Exam Date",
+            examDateField
+        );
+
+        addField(
+            form,
+            constraints,
+            4,
+            "Physician",
+            physicianField
+        );
+
+        addField(
+            form,
+            constraints,
+            5,
+            "Facility",
+            facilityField
+        );
+
+        advanceRow();
+
+        addField(
+            form,
+            constraints,
+            0,
+            "Blood Type",
+            bloodTypeBox
+        );
+
+        addField(
+            form,
+            constraints,
+            1,
+            "BP (mmHg)",
+            bpField
+        );
+
+        addField(
+            form,
+            constraints,
+            2,
+            "Heart Rate",
+            hrField
+        );
+
+        addField(
+            form,
+            constraints,
+            3,
+            "Height (cm)",
+            heightField
+        );
+
+        addField(
+            form,
+            constraints,
+            4,
+            "Weight (kg)",
+            weightField
+        );
+
+        advanceRow();
+
+        addField(
+            form,
+            constraints,
+            0,
+            "Vision L",
+            visionLField
+        );
+
+        addField(
+            form,
+            constraints,
+            1,
+            "Vision R",
+            visionRField
+        );
+
+        addField(
+            form,
+            constraints,
+            2,
+            "Hearing L",
+            hearingLField
+        );
+
+        addField(
+            form,
+            constraints,
+            3,
+            "Hearing R",
+            hearingRField
+        );
+
+        addField(
+            form,
+            constraints,
+            4,
+            "Chest X-Ray",
+            xrayField
+        );
+
+        addField(
+            form,
+            constraints,
+            5,
+            "Urinalysis",
+            urineField
+        );
+
+        addField(
+            form,
+            constraints,
+            6,
+            "CBC",
+            cbcField
+        );
+
+        advanceRow();
+
+        addField(
+            form,
+            constraints,
+            0,
+            "Status",
+            statusBox
+        );
+
+        addField(
+            form,
+            constraints,
+            1,
+            "Fit to Work",
+            fitBox
+        );
+
+        addField(
+            form,
+            constraints,
+            2,
+            "Admin Remarks",
+            remarksField
+        );
+
+        addTextArea(
+            form,
+            constraints,
+            3,
+            "Physician Findings",
+            findingsArea
+        );
+
+        addTextArea(
+            form,
+            constraints,
+            4,
+            "Recommendations",
+            recommendArea
+        );
+
+        JButton addButton = UITheme.button("ADD");
+        JButton updateButton = UITheme.button("UPDATE");
+
+        JButton completeButton =
+            UITheme.button("MARK COMPLETED");
+
+        JButton flagButton = UITheme.button("FLAG");
+        JButton deleteButton = UITheme.button("DELETE");
+        JButton clearButton = UITheme.button("CLEAR");
+
+        addButton.addActionListener(
+            event -> insertRecord()
+        );
+
+        updateButton.addActionListener(
+            event -> updateRecord()
+        );
+
+        completeButton.addActionListener(
+            event -> setStatus("COMPLETED")
+        );
+
+        flagButton.addActionListener(
+            event -> setStatus("FLAGGED")
+        );
+
+        deleteButton.addActionListener(
+            event -> deleteRecord()
+        );
+
+        clearButton.addActionListener(
+            event -> clearForm()
+        );
+
+        JPanel buttonPanel = new JPanel(
+            new FlowLayout(FlowLayout.LEFT)
+        );
+
+        buttonPanel.add(addButton);
+        buttonPanel.add(updateButton);
+        buttonPanel.add(completeButton);
+        buttonPanel.add(flagButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(clearButton);
+
+        constraints.gridx = 0;
+        constraints.gridy = labelRow + 2;
+        constraints.gridwidth = 12;
+
+        form.add(
+            buttonPanel,
+            constraints
+        );
 
         JLabel hint = new JLabel(
-            "  GREEN = Completed    RED = Flagged (needs attention)    " +
-            "YELLOW = Pending    Date format: YYYY-MM-DD"
+            "  GREEN = Completed    "
+            + "RED = Flagged    "
+            + "YELLOW = Pending    "
+            + "Date format: YYYY-MM-DD"
         );
-        hint.setFont(new Font("SansSerif", Font.ITALIC, 11));
+
+        hint.setFont(
+            new Font(
+                "SansSerif",
+                Font.ITALIC,
+                11
+            )
+        );
+
         hint.setForeground(Color.GRAY);
-        g.gridy++;
-        form.add(hint, g);
+
+        constraints.gridy = labelRow + 3;
+
+        form.add(
+            hint,
+            constraints
+        );
 
         return form;
     }
 
-    // Track current label row for the multi-row form layout
-    private int labelRow = 0;
-
-    private void advanceRow(GridBagConstraints g) {
+    private void advanceRow() {
         labelRow += 2;
     }
 
-    private void addField(JPanel p, GridBagConstraints g, int col,
-                          String label, JComponent field) {
-        g.gridx    = col;
-        g.gridy    = labelRow;
-        g.gridwidth = 1;
-        p.add(new JLabel(label), g);
-        g.gridy = labelRow + 1;
-        p.add(field, g);
+    private void addField(
+            JPanel panel,
+            GridBagConstraints constraints,
+            int column,
+            String label,
+            JComponent field
+    ) {
+        constraints.gridx = column;
+        constraints.gridy = labelRow;
+        constraints.gridwidth = 1;
+
+        panel.add(
+            new JLabel(label),
+            constraints
+        );
+
+        constraints.gridy = labelRow + 1;
+
+        panel.add(
+            field,
+            constraints
+        );
     }
 
-    private void addTextArea(JPanel p, GridBagConstraints g, int col,
-                             String label, JTextArea area) {
-        g.gridx    = col;
-        g.gridy    = labelRow;
-        g.gridwidth = 1;
-        p.add(new JLabel(label), g);
-        g.gridy = labelRow + 1;
-        p.add(new JScrollPane(area), g);
-    }
+    private void addTextArea(
+            JPanel panel,
+            GridBagConstraints constraints,
+            int column,
+            String label,
+            JTextArea area
+    ) {
+        constraints.gridx = column;
+        constraints.gridy = labelRow;
+        constraints.gridwidth = 1;
 
-    // ── Data loading ──────────────────────────────────────────────────────────
+        panel.add(
+            new JLabel(label),
+            constraints
+        );
+
+        constraints.gridy = labelRow + 1;
+
+        panel.add(
+            new JScrollPane(area),
+            constraints
+        );
+    }
 
     private void load(String key) {
-        boolean s = key != null && !key.trim().isEmpty();
+        boolean searching =
+            key != null
+            && !key.trim().isEmpty();
 
-        String base =
-            "SELECT me.id, me.employee_id, u.full_name, e.employee_no, " +
-            "       me.exam_type, me.exam_date, me.examining_physician, " +
-            "       me.medical_facility, me.blood_type, me.blood_pressure, " +
-            "       me.heart_rate, me.height_cm, me.weight_kg, " +
-            "       me.vision_left, me.vision_right, " +
-            "       me.hearing_left, me.hearing_right, " +
-            "       me.chest_xray, me.urinalysis, me.cbc, " +
-            "       me.status, me.fit_to_work, " +
-            "       me.findings, me.recommendations, me.admin_remarks, me.created_at " +
-            "FROM medical_examinations me " +
-            "JOIN employees e ON me.employee_id = e.id " +
-            "JOIN users u     ON e.user_id = u.id " +
-            "ORDER BY me.exam_date DESC";
+        String selectColumns =
+            "SELECT "
+            + "me.id, "
+            + "me.employee_id, "
+            + "u.full_name, "
+            + "e.employee_no, "
+            + "me.exam_type, "
+            + "me.exam_date, "
+            + "me.examining_physician, "
+            + "me.medical_facility, "
+            + "COALESCE("
+            + "NULLIF(TRIM(emd.blood_type), ''), "
+            + "NULLIF(TRIM(me.blood_type), '')"
+            + ") AS blood_type, "
+            + "me.blood_pressure, "
+            + "me.heart_rate, "
+            + "me.height_cm, "
+            + "me.weight_kg, "
+            + "me.vision_left, "
+            + "me.vision_right, "
+            + "me.hearing_left, "
+            + "me.hearing_right, "
+            + "me.chest_xray, "
+            + "me.urinalysis, "
+            + "me.cbc, "
+            + "me.status, "
+            + "me.fit_to_work, "
+            + "me.findings, "
+            + "me.recommendations, "
+            + "me.admin_remarks, "
+            + "me.created_at ";
 
-        String search =
-            "SELECT me.id, me.employee_id, u.full_name, e.employee_no, " +
-            "       me.exam_type, me.exam_date, me.examining_physician, " +
-            "       me.medical_facility, me.blood_type, me.blood_pressure, " +
-            "       me.heart_rate, me.height_cm, me.weight_kg, " +
-            "       me.vision_left, me.vision_right, " +
-            "       me.hearing_left, me.hearing_right, " +
-            "       me.chest_xray, me.urinalysis, me.cbc, " +
-            "       me.status, me.fit_to_work, " +
-            "       me.findings, me.recommendations, me.admin_remarks, me.created_at " +
-            "FROM medical_examinations me " +
-            "JOIN employees e ON me.employee_id = e.id " +
-            "JOIN users u     ON e.user_id = u.id " +
-            "WHERE u.full_name LIKE ? OR e.employee_no LIKE ? " +
-            "   OR me.exam_type LIKE ? OR me.examining_physician LIKE ? " +
-            "   OR me.status LIKE ? " +
-            "ORDER BY me.exam_date DESC";
+        String joins =
+            "FROM medical_examinations me "
+            + "JOIN employees e "
+            + "ON me.employee_id = e.id "
+            + "JOIN users u "
+            + "ON e.user_id = u.id "
+            + "LEFT JOIN employee_medical_details emd "
+            + "ON me.employee_id = emd.employee_id ";
 
-        try (Connection c  = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(s ? search : base)) {
+        String baseSql =
+            selectColumns
+            + joins
+            + "ORDER BY me.exam_date DESC";
 
-            if (s) {
-                String q = "%" + key.trim() + "%";
-                for (int i = 1; i <= 5; i++) p.setString(i, q);
+        String searchSql =
+            selectColumns
+            + joins
+            + "WHERE u.full_name LIKE ? "
+            + "OR e.employee_no LIKE ? "
+            + "OR me.exam_type LIKE ? "
+            + "OR me.examining_physician LIKE ? "
+            + "OR me.status LIKE ? "
+            + "ORDER BY me.exam_date DESC";
+
+        try (
+            Connection connection =
+                Database.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(
+                    searching
+                        ? searchSql
+                        : baseSql
+                )
+        ) {
+            if (searching) {
+                String query =
+                    "%" + key.trim() + "%";
+
+                for (int index = 1; index <= 5; index++) {
+                    statement.setString(
+                        index,
+                        query
+                    );
+                }
             }
 
-            try (ResultSet rs = p.executeQuery()) {
-                fillTable(rs);
+            try (
+                ResultSet resultSet =
+                    statement.executeQuery()
+            ) {
+                fillTable(resultSet);
             }
 
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
-    private void fillTable(ResultSet rs) {
+    private void fillTable(ResultSet resultSet) {
         String[] headers = {
-            "ID", "Emp ID", "Full Name", "Emp No",
-            "Exam Type", "Exam Date", "Physician", "Facility",
-            "Blood Type", "BP", "Heart Rate", "Height (cm)", "Weight (kg)",
-            "Vision L", "Vision R", "Hearing L", "Hearing R",
-            "Chest X-Ray", "Urinalysis", "CBC",
-            "Status", "Fit to Work",
-            "Findings", "Recommendations", "Admin Remarks", "Created At"
+            "ID",
+            "Emp ID",
+            "Full Name",
+            "Emp No",
+            "Exam Type",
+            "Exam Date",
+            "Physician",
+            "Facility",
+            "Blood Type",
+            "BP",
+            "Heart Rate",
+            "Height (cm)",
+            "Weight (kg)",
+            "Vision L",
+            "Vision R",
+            "Hearing L",
+            "Hearing R",
+            "Chest X-Ray",
+            "Urinalysis",
+            "CBC",
+            "Status",
+            "Fit to Work",
+            "Findings",
+            "Recommendations",
+            "Admin Remarks",
+            "Created At"
         };
 
-        DefaultTableModel model = new DefaultTableModel(headers, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
+        DefaultTableModel model =
+            new DefaultTableModel(headers, 0) {
+
+                @Override
+                public boolean isCellEditable(
+                        int row,
+                        int column
+                ) {
+                    return false;
+                }
+            };
 
         try {
-            ResultSetMetaData meta = rs.getMetaData();
-            int cols = meta.getColumnCount();
-            while (rs.next()) {
-                Object[] row = new Object[cols];
-                for (int i = 0; i < cols; i++) {
-                    // col 21 = fit_to_work BOOLEAN → Yes/No
-                    if (i == 21) row[i] = rs.getInt(i + 1) == 1 ? "Yes" : "No";
-                    else         row[i] = rs.getObject(i + 1);
+            ResultSetMetaData metadata =
+                resultSet.getMetaData();
+
+            int columnCount =
+                metadata.getColumnCount();
+
+            while (resultSet.next()) {
+                Object[] row =
+                    new Object[columnCount];
+
+                for (
+                    int index = 0;
+                    index < columnCount;
+                    index++
+                ) {
+                    if (index == 21) {
+                        row[index] =
+                            resultSet.getBoolean(index + 1)
+                                ? "Yes"
+                                : "No";
+                    } else {
+                        row[index] =
+                            resultSet.getObject(index + 1);
+                    }
                 }
+
                 model.addRow(row);
             }
-        } catch (SQLException ex) {
-            Dialogs.error(this, ex.getMessage());
+
+        } catch (SQLException exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
 
         table.setModel(model);
     }
 
-    // ── Form population ───────────────────────────────────────────────────────
-
     private void populateForm() {
-        int row = table.getSelectedRow();
-        if (row < 0) return;
-        int m = table.convertRowIndexToModel(row);
-        DefaultTableModel dm = (DefaultTableModel) table.getModel();
+        int selectedRow =
+            table.getSelectedRow();
 
-        idField.setText(        safeStr(dm.getValueAt(m, 0)));
-        empIdField.setText(     safeStr(dm.getValueAt(m, 1)));
-        typeBox.setSelectedItem(safeStr(dm.getValueAt(m, 4)));
-        examDateField.setText(  safeStr(dm.getValueAt(m, 5)));
-        physicianField.setText( safeStr(dm.getValueAt(m, 6)));
-        facilityField.setText(  safeStr(dm.getValueAt(m, 7)));
-
-        String bt = safeStr(dm.getValueAt(m, 8));
-        bloodTypeBox.setSelectedItem(bt.isEmpty() ? "" : bt);
-
-        bpField.setText(        safeStr(dm.getValueAt(m, 9)));
-        hrField.setText(        safeStr(dm.getValueAt(m, 10)));
-        heightField.setText(    safeStr(dm.getValueAt(m, 11)));
-        weightField.setText(    safeStr(dm.getValueAt(m, 12)));
-        visionLField.setText(   safeStr(dm.getValueAt(m, 13)));
-        visionRField.setText(   safeStr(dm.getValueAt(m, 14)));
-        hearingLField.setText(  safeStr(dm.getValueAt(m, 15)));
-        hearingRField.setText(  safeStr(dm.getValueAt(m, 16)));
-        xrayField.setText(      safeStr(dm.getValueAt(m, 17)));
-        urineField.setText(     safeStr(dm.getValueAt(m, 18)));
-        cbcField.setText(       safeStr(dm.getValueAt(m, 19)));
-        statusBox.setSelectedItem(safeStr(dm.getValueAt(m, 20)));
-        fitBox.setSelected(     "Yes".equals(safeStr(dm.getValueAt(m, 21))));
-        findingsArea.setText(   safeStr(dm.getValueAt(m, 22)));
-        recommendArea.setText(  safeStr(dm.getValueAt(m, 23)));
-        remarksField.setText(   safeStr(dm.getValueAt(m, 24)));
-    }
-
-
-    // ── View selected record ───────────────────────────────────────────────────
-
-    private void showSelectedRecord() {
-        int selectedRow = table.getSelectedRow();
         if (selectedRow < 0) {
-            Dialogs.error(this, "Select a medical examination record first.");
             return;
         }
 
-        int row = table.convertRowIndexToModel(selectedRow);
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        int modelRow =
+            table.convertRowIndexToModel(selectedRow);
 
-        String html = "<html><body style='font-family:SansSerif; padding:18px;'>" +
-            "<h1 style='margin-bottom:4px;'>Medical Examination Result</h1>" +
-            "<p style='color:#666;'>Record ID: " + html(model.getValueAt(row, 0)) + "</p>" +
-            section("Employee Information") +
-            item("Employee ID", model.getValueAt(row, 1)) +
-            item("Employee Name", model.getValueAt(row, 2)) +
-            item("Employee Number", model.getValueAt(row, 3)) +
-            section("Examination Information") +
-            item("Exam Type", model.getValueAt(row, 4)) +
-            item("Exam Date", model.getValueAt(row, 5)) +
-            item("Physician", model.getValueAt(row, 6)) +
-            item("Medical Facility", model.getValueAt(row, 7)) +
-            section("Vital Signs") +
-            item("Blood Type", model.getValueAt(row, 8)) +
-            item("Blood Pressure", model.getValueAt(row, 9)) +
-            item("Heart Rate", model.getValueAt(row, 10)) +
-            item("Height", valueWithUnit(model.getValueAt(row, 11), " cm")) +
-            item("Weight", valueWithUnit(model.getValueAt(row, 12), " kg")) +
-            section("Test Results") +
-            item("Vision — Left", model.getValueAt(row, 13)) +
-            item("Vision — Right", model.getValueAt(row, 14)) +
-            item("Hearing — Left", model.getValueAt(row, 15)) +
-            item("Hearing — Right", model.getValueAt(row, 16)) +
-            item("Chest X-Ray", model.getValueAt(row, 17)) +
-            item("Urinalysis", model.getValueAt(row, 18)) +
-            item("CBC", model.getValueAt(row, 19)) +
-            section("Assessment") +
-            item("Status", model.getValueAt(row, 20)) +
-            item("Fit to Work", model.getValueAt(row, 21)) +
-            item("Physician Findings", model.getValueAt(row, 22)) +
-            item("Recommendations", model.getValueAt(row, 23)) +
-            item("Admin Remarks", model.getValueAt(row, 24)) +
-            item("Created At", model.getValueAt(row, 25)) +
-            "</body></html>";
+        DefaultTableModel model =
+            (DefaultTableModel) table.getModel();
 
-        JEditorPane resultPane = new JEditorPane("text/html", html);
-        resultPane.setEditable(false);
-        resultPane.setCaretPosition(0);
-
-        JDialog dialog = new JDialog(
-            SwingUtilities.getWindowAncestor(this),
-            "Medical Examination Result",
-            java.awt.Dialog.ModalityType.MODELESS
+        idField.setText(
+            safeStr(model.getValueAt(modelRow, 0))
         );
-        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        dialog.setLayout(new BorderLayout(8, 8));
-        dialog.add(new JScrollPane(resultPane), BorderLayout.CENTER);
 
-        JButton closeButton = UITheme.button("CLOSE");
-        closeButton.addActionListener(e -> dialog.dispose());
-        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        controls.add(closeButton);
-        dialog.add(controls, BorderLayout.SOUTH);
+        empIdField.setText(
+            safeStr(model.getValueAt(modelRow, 1))
+        );
 
-        dialog.setSize(760, 650);
+        typeBox.setSelectedItem(
+            safeStr(model.getValueAt(modelRow, 4))
+        );
+
+        examDateField.setText(
+            safeStr(model.getValueAt(modelRow, 5))
+        );
+
+        physicianField.setText(
+            safeStr(model.getValueAt(modelRow, 6))
+        );
+
+        facilityField.setText(
+            safeStr(model.getValueAt(modelRow, 7))
+        );
+
+        String bloodType =
+            safeStr(model.getValueAt(modelRow, 8));
+
+        bloodTypeBox.setSelectedItem(
+            bloodType.isEmpty()
+                ? ""
+                : bloodType
+        );
+
+        bpField.setText(
+            safeStr(model.getValueAt(modelRow, 9))
+        );
+
+        hrField.setText(
+            safeStr(model.getValueAt(modelRow, 10))
+        );
+
+        heightField.setText(
+            safeStr(model.getValueAt(modelRow, 11))
+        );
+
+        weightField.setText(
+            safeStr(model.getValueAt(modelRow, 12))
+        );
+
+        visionLField.setText(
+            safeStr(model.getValueAt(modelRow, 13))
+        );
+
+        visionRField.setText(
+            safeStr(model.getValueAt(modelRow, 14))
+        );
+
+        hearingLField.setText(
+            safeStr(model.getValueAt(modelRow, 15))
+        );
+
+        hearingRField.setText(
+            safeStr(model.getValueAt(modelRow, 16))
+        );
+
+        xrayField.setText(
+            safeStr(model.getValueAt(modelRow, 17))
+        );
+
+        urineField.setText(
+            safeStr(model.getValueAt(modelRow, 18))
+        );
+
+        cbcField.setText(
+            safeStr(model.getValueAt(modelRow, 19))
+        );
+
+        statusBox.setSelectedItem(
+            safeStr(model.getValueAt(modelRow, 20))
+        );
+
+        fitBox.setSelected(
+            "Yes".equalsIgnoreCase(
+                safeStr(
+                    model.getValueAt(modelRow, 21)
+                )
+            )
+        );
+
+        findingsArea.setText(
+            safeStr(model.getValueAt(modelRow, 22))
+        );
+
+        recommendArea.setText(
+            safeStr(model.getValueAt(modelRow, 23))
+        );
+
+        remarksField.setText(
+            safeStr(model.getValueAt(modelRow, 24))
+        );
+    }
+
+    private void showSelectedRecord() {
+        int selectedRow =
+            table.getSelectedRow();
+
+        if (selectedRow < 0) {
+            Dialogs.error(
+                this,
+                "Select a medical examination record first."
+            );
+
+            return;
+        }
+
+        int modelRow =
+            table.convertRowIndexToModel(selectedRow);
+
+        DefaultTableModel model =
+            (DefaultTableModel) table.getModel();
+
+        int employeeId;
+
+        try {
+            employeeId = Integer.parseInt(
+                safeStr(
+                    model.getValueAt(modelRow, 1)
+                )
+            );
+
+        } catch (NumberFormatException exception) {
+            Dialogs.error(
+                this,
+                "The selected record has an invalid Employee ID."
+            );
+
+            return;
+        }
+
+        String fullName =
+            displayValue(
+                model.getValueAt(modelRow, 2)
+            );
+
+        String employeeNumber =
+            displayValue(
+                model.getValueAt(modelRow, 3)
+            );
+
+        String medicalProfileHtml =
+            loadMedicalProfileHtml(employeeId);
+
+        String html =
+            "<html>"
+            + "<head>"
+            + "<style>"
+            + "body {"
+            + "font-family: SansSerif;"
+            + "background: #ffffff;"
+            + "color: #222222;"
+            + "margin: 18px;"
+            + "}"
+            + "h1 {"
+            + "font-size: 22px;"
+            + "color: #122d48;"
+            + "margin-bottom: 4px;"
+            + "}"
+            + "h2 {"
+            + "font-size: 16px;"
+            + "color: #157e8b;"
+            + "margin-top: 22px;"
+            + "border-bottom: 1px solid #cccccc;"
+            + "padding-bottom: 4px;"
+            + "}"
+            + "table {"
+            + "width: 100%;"
+            + "border-collapse: collapse;"
+            + "margin-top: 8px;"
+            + "}"
+            + "td {"
+            + "border: 1px solid #dddddd;"
+            + "padding: 7px;"
+            + "vertical-align: top;"
+            + "}"
+            + ".label {"
+            + "width: 190px;"
+            + "font-weight: bold;"
+            + "background: #f4f7fa;"
+            + "}"
+            + ".subtitle {"
+            + "color: #666666;"
+            + "margin-bottom: 14px;"
+            + "}"
+            + "</style>"
+            + "</head>"
+            + "<body>"
+
+            + "<h1>Medical Examination Result</h1>"
+
+            + "<div class='subtitle'>"
+            + escapeHtml(fullName)
+            + " &mdash; "
+            + escapeHtml(employeeNumber)
+            + "</div>"
+
+            + "<h2>Employee and Examination Information</h2>"
+            + "<table>"
+            + resultRow(
+                "Record ID",
+                model.getValueAt(modelRow, 0)
+            )
+            + resultRow(
+                "Employee ID",
+                model.getValueAt(modelRow, 1)
+            )
+            + resultRow(
+                "Full Name",
+                model.getValueAt(modelRow, 2)
+            )
+            + resultRow(
+                "Employee Number",
+                model.getValueAt(modelRow, 3)
+            )
+            + resultRow(
+                "Exam Type",
+                model.getValueAt(modelRow, 4)
+            )
+            + resultRow(
+                "Exam Date",
+                model.getValueAt(modelRow, 5)
+            )
+            + resultRow(
+                "Examining Physician",
+                model.getValueAt(modelRow, 6)
+            )
+            + resultRow(
+                "Medical Facility",
+                model.getValueAt(modelRow, 7)
+            )
+            + resultRow(
+                "Status",
+                model.getValueAt(modelRow, 20)
+            )
+            + resultRow(
+                "Fit to Work",
+                model.getValueAt(modelRow, 21)
+            )
+            + "</table>"
+
+            + "<h2>Vital Signs</h2>"
+            + "<table>"
+            + resultRow(
+                "Blood Type",
+                model.getValueAt(modelRow, 8)
+            )
+            + resultRow(
+                "Blood Pressure",
+                model.getValueAt(modelRow, 9)
+            )
+            + resultRow(
+                "Heart Rate",
+                model.getValueAt(modelRow, 10)
+            )
+            + resultRow(
+                "Height",
+                appendUnit(
+                    model.getValueAt(modelRow, 11),
+                    "cm"
+                )
+            )
+            + resultRow(
+                "Weight",
+                appendUnit(
+                    model.getValueAt(modelRow, 12),
+                    "kg"
+                )
+            )
+            + "</table>"
+
+            + "<h2>Medical Test Results</h2>"
+            + "<table>"
+            + resultRow(
+                "Vision - Left",
+                model.getValueAt(modelRow, 13)
+            )
+            + resultRow(
+                "Vision - Right",
+                model.getValueAt(modelRow, 14)
+            )
+            + resultRow(
+                "Hearing - Left",
+                model.getValueAt(modelRow, 15)
+            )
+            + resultRow(
+                "Hearing - Right",
+                model.getValueAt(modelRow, 16)
+            )
+            + resultRow(
+                "Chest X-Ray",
+                model.getValueAt(modelRow, 17)
+            )
+            + resultRow(
+                "Urinalysis",
+                model.getValueAt(modelRow, 18)
+            )
+            + resultRow(
+                "CBC",
+                model.getValueAt(modelRow, 19)
+            )
+            + "</table>"
+
+            + "<h2>Assessment</h2>"
+            + "<table>"
+            + resultRow(
+                "Physician Findings",
+                model.getValueAt(modelRow, 22)
+            )
+            + resultRow(
+                "Recommendations",
+                model.getValueAt(modelRow, 23)
+            )
+            + resultRow(
+                "Admin Remarks",
+                model.getValueAt(modelRow, 24)
+            )
+            + resultRow(
+                "Record Created",
+                model.getValueAt(modelRow, 25)
+            )
+            + "</table>"
+
+            + medicalProfileHtml
+
+            + "</body>"
+            + "</html>";
+
+        JEditorPane viewer = new JEditorPane();
+
+        viewer.setContentType("text/html");
+        viewer.setEditable(false);
+        viewer.setText(html);
+        viewer.setCaretPosition(0);
+
+        JScrollPane scrollPane =
+            new JScrollPane(viewer);
+
+        scrollPane.setPreferredSize(
+            new Dimension(760, 650)
+        );
+
+        Window owner =
+            SwingUtilities.getWindowAncestor(this);
+
+        JDialog dialog =
+            new JDialog(
+                owner,
+                "Medical Examination Result",
+                JDialog.ModalityType.APPLICATION_MODAL
+            );
+
+        dialog.setLayout(
+            new BorderLayout()
+        );
+
+        dialog.add(
+            scrollPane,
+            BorderLayout.CENTER
+        );
+
+        JButton closeButton =
+            UITheme.button("CLOSE");
+
+        closeButton.addActionListener(
+            event -> dialog.dispose()
+        );
+
+        JPanel footer = new JPanel(
+            new FlowLayout(FlowLayout.RIGHT)
+        );
+
+        footer.add(closeButton);
+
+        dialog.add(
+            footer,
+            BorderLayout.SOUTH
+        );
+
+        dialog.pack();
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
 
-    private String section(String title) {
-        return "<h2 style='margin-top:22px; border-bottom:1px solid #ccc; padding-bottom:5px;'>" +
-               html(title) + "</h2>";
+    private String loadMedicalProfileHtml(
+            int employeeId
+    ) {
+        String sql =
+            "SELECT "
+            + "blood_type, "
+            + "allergy, "
+            + "existing_condition, "
+            + "emergency_notes, "
+            + "medical_certificate, "
+            + "workplace_injury_report, "
+            + "health_declaration, "
+            + "wellness_activity "
+            + "FROM employee_medical_details "
+            + "WHERE employee_id = ?";
+
+        try (
+            Connection connection =
+                Database.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setInt(
+                1,
+                employeeId
+            );
+
+            try (
+                ResultSet resultSet =
+                    statement.executeQuery()
+            ) {
+                if (resultSet.next()) {
+                    return
+                        "<h2>Employee Medical Profile</h2>"
+                        + "<table>"
+                        + resultRow(
+                            "Profile Blood Type",
+                            resultSet.getString(
+                                "blood_type"
+                            )
+                        )
+                        + resultRow(
+                            "Allergies",
+                            resultSet.getString(
+                                "allergy"
+                            )
+                        )
+                        + resultRow(
+                            "Existing Medical Condition",
+                            resultSet.getString(
+                                "existing_condition"
+                            )
+                        )
+                        + resultRow(
+                            "Emergency Medical Notes",
+                            resultSet.getString(
+                                "emergency_notes"
+                            )
+                        )
+                        + resultRow(
+                            "Medical Certificate",
+                            resultSet.getString(
+                                "medical_certificate"
+                            )
+                        )
+                        + resultRow(
+                            "Workplace Injury Report",
+                            resultSet.getString(
+                                "workplace_injury_report"
+                            )
+                        )
+                        + resultRow(
+                            "Health Declaration",
+                            resultSet.getString(
+                                "health_declaration"
+                            )
+                        )
+                        + resultRow(
+                            "Wellness Activity",
+                            resultSet.getString(
+                                "wellness_activity"
+                            )
+                        )
+                        + "</table>";
+                }
+            }
+
+        } catch (Exception exception) {
+            return
+                "<h2>Employee Medical Profile</h2>"
+                + "<table>"
+                + resultRow(
+                    "Profile Details",
+                    "Unable to load: "
+                    + exception.getMessage()
+                )
+                + "</table>";
+        }
+
+        return
+            "<h2>Employee Medical Profile</h2>"
+            + "<table>"
+            + resultRow(
+                "Profile Details",
+                "No medical profile details found."
+            )
+            + "</table>";
     }
 
-    private String item(String label, Object value) {
-        String text = value == null || value.toString().trim().isEmpty()
-            ? "—" : html(value);
-        return "<table width='100%' cellpadding='5' cellspacing='0'>" +
-               "<tr><td width='32%' valign='top'><b>" + html(label) +
-               "</b></td><td valign='top'>" + text + "</td></tr></table>";
+    private String resultRow(
+            String label,
+            Object value
+    ) {
+        return
+            "<tr>"
+            + "<td class='label'>"
+            + escapeHtml(label)
+            + "</td>"
+            + "<td>"
+            + escapeHtml(displayValue(value))
+            + "</td>"
+            + "</tr>";
     }
 
-    private String valueWithUnit(Object value, String unit) {
-        if (value == null || value.toString().trim().isEmpty()) return "";
-        return value.toString() + unit;
+    private String appendUnit(
+            Object value,
+            String unit
+    ) {
+        String text =
+            safeStr(value).trim();
+
+        if (text.isEmpty()) {
+            return "";
+        }
+
+        return text + " " + unit;
     }
 
-    private String html(Object value) {
-        if (value == null) return "";
-        return value.toString()
+    private String displayValue(Object value) {
+        String text =
+            safeStr(value).trim();
+
+        return text.isEmpty()
+            ? "—"
+            : text;
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value
             .replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
@@ -502,237 +1382,710 @@ public class MedicalExamPanel extends JPanel {
             .replace("\n", "<br>");
     }
 
-    // ── CRUD ──────────────────────────────────────────────────────────────────
-
     private void insertRecord() {
-        if (empIdField.getText().trim().isEmpty()
-                || examDateField.getText().trim().isEmpty()) {
-            Dialogs.error(this, "Employee ID and Exam Date are required.");
+        if (
+            empIdField.getText().trim().isEmpty()
+            || examDateField.getText().trim().isEmpty()
+        ) {
+            Dialogs.error(
+                this,
+                "Employee ID and Exam Date are required."
+            );
+
             return;
         }
 
         String sql =
-            "INSERT INTO medical_examinations " +
-            "(employee_id, exam_type, exam_date, examining_physician, medical_facility, " +
-            " blood_type, blood_pressure, heart_rate, height_cm, weight_kg, " +
-            " vision_left, vision_right, hearing_left, hearing_right, " +
-            " chest_xray, urinalysis, cbc, " +
-            " findings, recommendations, fit_to_work, status, admin_remarks, created_by) " +
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            "INSERT INTO medical_examinations "
+            + "("
+            + "employee_id, "
+            + "exam_type, "
+            + "exam_date, "
+            + "examining_physician, "
+            + "medical_facility, "
+            + "blood_type, "
+            + "blood_pressure, "
+            + "heart_rate, "
+            + "height_cm, "
+            + "weight_kg, "
+            + "vision_left, "
+            + "vision_right, "
+            + "hearing_left, "
+            + "hearing_right, "
+            + "chest_xray, "
+            + "urinalysis, "
+            + "cbc, "
+            + "findings, "
+            + "recommendations, "
+            + "fit_to_work, "
+            + "status, "
+            + "admin_remarks, "
+            + "created_by"
+            + ") "
+            + "VALUES ("
+            + "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+            + "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+            + ")";
 
-        try (Connection c  = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(sql)) {
+        try (
+            Connection connection =
+                Database.getConnection();
 
-            p.setInt(1,    Integer.parseInt(empIdField.getText().trim()));
-            p.setString(2, typeBox.getSelectedItem().toString());
-            p.setString(3, examDateField.getText().trim());
-            p.setString(4, physicianField.getText().trim());
-            p.setString(5, facilityField.getText().trim());
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setInt(
+                1,
+                Integer.parseInt(
+                    empIdField.getText().trim()
+                )
+            );
 
-            String bt = bloodTypeBox.getSelectedItem().toString().trim();
-            if (bt.isEmpty()) p.setNull(6, Types.VARCHAR);
-            else              p.setString(6, bt);
+            statement.setString(
+                2,
+                typeBox.getSelectedItem().toString()
+            );
 
-            p.setString(7,   bpField.getText().trim());
-            setNullableInt(p, 8, hrField.getText().trim());
-            setNullableDecimal(p, 9,  heightField.getText().trim());
-            setNullableDecimal(p, 10, weightField.getText().trim());
-            p.setString(11, visionLField.getText().trim());
-            p.setString(12, visionRField.getText().trim());
-            p.setString(13, hearingLField.getText().trim());
-            p.setString(14, hearingRField.getText().trim());
-            p.setString(15, xrayField.getText().trim());
-            p.setString(16, urineField.getText().trim());
-            p.setString(17, cbcField.getText().trim());
-            p.setString(18, findingsArea.getText().trim());
-            p.setString(19, recommendArea.getText().trim());
-            p.setBoolean(20, fitBox.isSelected());
-            p.setString(21, statusBox.getSelectedItem().toString());
-            p.setString(22, remarksField.getText().trim());
-            p.setInt(23,   session.getId());
+            statement.setString(
+                3,
+                examDateField.getText().trim()
+            );
 
-            p.executeUpdate();
-            AuditService.log(session.getId(), "CREATE", "MEDICAL_EXAM",
-                typeBox.getSelectedItem() + " exam added for employee #"
-                + empIdField.getText().trim());
+            statement.setString(
+                4,
+                physicianField.getText().trim()
+            );
+
+            statement.setString(
+                5,
+                facilityField.getText().trim()
+            );
+
+            String bloodType =
+                bloodTypeBox
+                    .getSelectedItem()
+                    .toString()
+                    .trim();
+
+            if (bloodType.isEmpty()) {
+                statement.setNull(
+                    6,
+                    Types.VARCHAR
+                );
+            } else {
+                statement.setString(
+                    6,
+                    bloodType
+                );
+            }
+
+            statement.setString(
+                7,
+                bpField.getText().trim()
+            );
+
+            setNullableInt(
+                statement,
+                8,
+                hrField.getText().trim()
+            );
+
+            setNullableDecimal(
+                statement,
+                9,
+                heightField.getText().trim()
+            );
+
+            setNullableDecimal(
+                statement,
+                10,
+                weightField.getText().trim()
+            );
+
+            statement.setString(
+                11,
+                visionLField.getText().trim()
+            );
+
+            statement.setString(
+                12,
+                visionRField.getText().trim()
+            );
+
+            statement.setString(
+                13,
+                hearingLField.getText().trim()
+            );
+
+            statement.setString(
+                14,
+                hearingRField.getText().trim()
+            );
+
+            statement.setString(
+                15,
+                xrayField.getText().trim()
+            );
+
+            statement.setString(
+                16,
+                urineField.getText().trim()
+            );
+
+            statement.setString(
+                17,
+                cbcField.getText().trim()
+            );
+
+            statement.setString(
+                18,
+                findingsArea.getText().trim()
+            );
+
+            statement.setString(
+                19,
+                recommendArea.getText().trim()
+            );
+
+            statement.setBoolean(
+                20,
+                fitBox.isSelected()
+            );
+
+            statement.setString(
+                21,
+                statusBox.getSelectedItem().toString()
+            );
+
+            statement.setString(
+                22,
+                remarksField.getText().trim()
+            );
+
+            statement.setInt(
+                23,
+                session.getId()
+            );
+
+            statement.executeUpdate();
+
+            AuditService.log(
+                session.getId(),
+                "CREATE",
+                "MEDICAL_EXAM",
+                typeBox.getSelectedItem()
+                + " exam added for employee #"
+                + empIdField.getText().trim()
+            );
+
             clearForm();
             load("");
-            Dialogs.info(this, "Medical examination record added.");
 
-        } catch (NumberFormatException nfe) {
-            Dialogs.error(this, "Employee ID must be numeric. Heart Rate, Height and Weight must be numbers.");
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+            Dialogs.info(
+                this,
+                "Medical examination record added."
+            );
+
+        } catch (NumberFormatException exception) {
+            Dialogs.error(
+                this,
+                "Employee ID must be numeric. "
+                + "Heart Rate, Height and Weight "
+                + "must also be numbers."
+            );
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
     private void updateRecord() {
-        if (idField.getText().isEmpty()) {
-            Dialogs.error(this, "Select a record to update.");
+        if (idField.getText().trim().isEmpty()) {
+            Dialogs.error(
+                this,
+                "Select a record to update."
+            );
+
             return;
         }
 
         String sql =
-            "UPDATE medical_examinations SET " +
-            "employee_id=?, exam_type=?, exam_date=?, examining_physician=?, medical_facility=?, " +
-            "blood_type=?, blood_pressure=?, heart_rate=?, height_cm=?, weight_kg=?, " +
-            "vision_left=?, vision_right=?, hearing_left=?, hearing_right=?, " +
-            "chest_xray=?, urinalysis=?, cbc=?, " +
-            "findings=?, recommendations=?, fit_to_work=?, status=?, admin_remarks=? " +
-            "WHERE id=?";
+            "UPDATE medical_examinations SET "
+            + "employee_id=?, "
+            + "exam_type=?, "
+            + "exam_date=?, "
+            + "examining_physician=?, "
+            + "medical_facility=?, "
+            + "blood_type=?, "
+            + "blood_pressure=?, "
+            + "heart_rate=?, "
+            + "height_cm=?, "
+            + "weight_kg=?, "
+            + "vision_left=?, "
+            + "vision_right=?, "
+            + "hearing_left=?, "
+            + "hearing_right=?, "
+            + "chest_xray=?, "
+            + "urinalysis=?, "
+            + "cbc=?, "
+            + "findings=?, "
+            + "recommendations=?, "
+            + "fit_to_work=?, "
+            + "status=?, "
+            + "admin_remarks=? "
+            + "WHERE id=?";
 
-        try (Connection c  = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(sql)) {
+        try (
+            Connection connection =
+                Database.getConnection();
 
-            p.setInt(1,    Integer.parseInt(empIdField.getText().trim()));
-            p.setString(2, typeBox.getSelectedItem().toString());
-            p.setString(3, examDateField.getText().trim());
-            p.setString(4, physicianField.getText().trim());
-            p.setString(5, facilityField.getText().trim());
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setInt(
+                1,
+                Integer.parseInt(
+                    empIdField.getText().trim()
+                )
+            );
 
-            String bt = bloodTypeBox.getSelectedItem().toString().trim();
-            if (bt.isEmpty()) p.setNull(6, Types.VARCHAR);
-            else              p.setString(6, bt);
+            statement.setString(
+                2,
+                typeBox.getSelectedItem().toString()
+            );
 
-            p.setString(7,   bpField.getText().trim());
-            setNullableInt(p, 8, hrField.getText().trim());
-            setNullableDecimal(p, 9,  heightField.getText().trim());
-            setNullableDecimal(p, 10, weightField.getText().trim());
-            p.setString(11, visionLField.getText().trim());
-            p.setString(12, visionRField.getText().trim());
-            p.setString(13, hearingLField.getText().trim());
-            p.setString(14, hearingRField.getText().trim());
-            p.setString(15, xrayField.getText().trim());
-            p.setString(16, urineField.getText().trim());
-            p.setString(17, cbcField.getText().trim());
-            p.setString(18, findingsArea.getText().trim());
-            p.setString(19, recommendArea.getText().trim());
-            p.setBoolean(20, fitBox.isSelected());
-            p.setString(21, statusBox.getSelectedItem().toString());
-            p.setString(22, remarksField.getText().trim());
-            p.setInt(23,    Integer.parseInt(idField.getText().trim()));
+            statement.setString(
+                3,
+                examDateField.getText().trim()
+            );
 
-            p.executeUpdate();
-            AuditService.log(session.getId(), "UPDATE", "MEDICAL_EXAM",
-                "Updated exam record #" + idField.getText());
+            statement.setString(
+                4,
+                physicianField.getText().trim()
+            );
+
+            statement.setString(
+                5,
+                facilityField.getText().trim()
+            );
+
+            String bloodType =
+                bloodTypeBox
+                    .getSelectedItem()
+                    .toString()
+                    .trim();
+
+            if (bloodType.isEmpty()) {
+                statement.setNull(
+                    6,
+                    Types.VARCHAR
+                );
+            } else {
+                statement.setString(
+                    6,
+                    bloodType
+                );
+            }
+
+            statement.setString(
+                7,
+                bpField.getText().trim()
+            );
+
+            setNullableInt(
+                statement,
+                8,
+                hrField.getText().trim()
+            );
+
+            setNullableDecimal(
+                statement,
+                9,
+                heightField.getText().trim()
+            );
+
+            setNullableDecimal(
+                statement,
+                10,
+                weightField.getText().trim()
+            );
+
+            statement.setString(
+                11,
+                visionLField.getText().trim()
+            );
+
+            statement.setString(
+                12,
+                visionRField.getText().trim()
+            );
+
+            statement.setString(
+                13,
+                hearingLField.getText().trim()
+            );
+
+            statement.setString(
+                14,
+                hearingRField.getText().trim()
+            );
+
+            statement.setString(
+                15,
+                xrayField.getText().trim()
+            );
+
+            statement.setString(
+                16,
+                urineField.getText().trim()
+            );
+
+            statement.setString(
+                17,
+                cbcField.getText().trim()
+            );
+
+            statement.setString(
+                18,
+                findingsArea.getText().trim()
+            );
+
+            statement.setString(
+                19,
+                recommendArea.getText().trim()
+            );
+
+            statement.setBoolean(
+                20,
+                fitBox.isSelected()
+            );
+
+            statement.setString(
+                21,
+                statusBox.getSelectedItem().toString()
+            );
+
+            statement.setString(
+                22,
+                remarksField.getText().trim()
+            );
+
+            statement.setInt(
+                23,
+                Integer.parseInt(
+                    idField.getText().trim()
+                )
+            );
+
+            statement.executeUpdate();
+
+            AuditService.log(
+                session.getId(),
+                "UPDATE",
+                "MEDICAL_EXAM",
+                "Updated exam record #"
+                + idField.getText()
+            );
+
             clearForm();
             load("");
-            Dialogs.info(this, "Record updated.");
 
-        } catch (NumberFormatException nfe) {
-            Dialogs.error(this, "Employee ID must be numeric. Heart Rate, Height and Weight must be numbers.");
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+            Dialogs.info(
+                this,
+                "Record updated."
+            );
+
+        } catch (NumberFormatException exception) {
+            Dialogs.error(
+                this,
+                "Employee ID must be numeric. "
+                + "Heart Rate, Height and Weight "
+                + "must also be numbers."
+            );
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
     private void setStatus(String newStatus) {
-        if (idField.getText().isEmpty()) {
-            Dialogs.error(this, "Select a record first.");
+        if (idField.getText().trim().isEmpty()) {
+            Dialogs.error(
+                this,
+                "Select a record first."
+            );
+
             return;
         }
-        String label = "COMPLETED".equals(newStatus) ? "mark as completed" : "flag";
-        if (!Dialogs.confirm(this,
-                "Are you sure you want to " + label +
-                " exam record #" + idField.getText() + "?")) return;
 
-        try (Connection c  = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(
-                 "UPDATE medical_examinations SET status=? WHERE id=?")) {
+        String actionLabel =
+            "COMPLETED".equals(newStatus)
+                ? "mark as completed"
+                : "flag";
 
-            p.setString(1, newStatus);
-            p.setInt(2, Integer.parseInt(idField.getText().trim()));
-            p.executeUpdate();
-            AuditService.log(session.getId(), "UPDATE", "MEDICAL_EXAM",
-                "Set exam #" + idField.getText() + " to " + newStatus);
+        boolean confirmed =
+            Dialogs.confirm(
+                this,
+                "Are you sure you want to "
+                + actionLabel
+                + " exam record #"
+                + idField.getText()
+                + "?"
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
+        String sql =
+            "UPDATE medical_examinations "
+            + "SET status=? "
+            + "WHERE id=?";
+
+        try (
+            Connection connection =
+                Database.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setString(
+                1,
+                newStatus
+            );
+
+            statement.setInt(
+                2,
+                Integer.parseInt(
+                    idField.getText().trim()
+                )
+            );
+
+            statement.executeUpdate();
+
+            AuditService.log(
+                session.getId(),
+                "UPDATE",
+                "MEDICAL_EXAM",
+                "Set exam #"
+                + idField.getText()
+                + " to "
+                + newStatus
+            );
+
             clearForm();
             load("");
-            Dialogs.info(this, "Status updated to " + newStatus + ".");
 
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+            Dialogs.info(
+                this,
+                "Status updated to "
+                + newStatus
+                + "."
+            );
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
     private void deleteRecord() {
-        if (idField.getText().isEmpty()) {
-            Dialogs.error(this, "Select a record to delete.");
+        if (idField.getText().trim().isEmpty()) {
+            Dialogs.error(
+                this,
+                "Select a record to delete."
+            );
+
             return;
         }
-        if (!Dialogs.confirm(this,
-                "Delete exam record #" + idField.getText() + "? This cannot be undone."))
+
+        boolean confirmed =
+            Dialogs.confirm(
+                this,
+                "Delete exam record #"
+                + idField.getText()
+                + "? This cannot be undone."
+            );
+
+        if (!confirmed) {
             return;
+        }
 
-        try (Connection c  = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(
-                 "DELETE FROM medical_examinations WHERE id=?")) {
+        String sql =
+            "DELETE FROM medical_examinations "
+            + "WHERE id=?";
 
-            p.setInt(1, Integer.parseInt(idField.getText().trim()));
-            p.executeUpdate();
-            AuditService.log(session.getId(), "DELETE", "MEDICAL_EXAM",
-                "Deleted exam record #" + idField.getText());
+        try (
+            Connection connection =
+                Database.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setInt(
+                1,
+                Integer.parseInt(
+                    idField.getText().trim()
+                )
+            );
+
+            statement.executeUpdate();
+
+            AuditService.log(
+                session.getId(),
+                "DELETE",
+                "MEDICAL_EXAM",
+                "Deleted exam record #"
+                + idField.getText()
+            );
+
             clearForm();
             load("");
 
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+            Dialogs.info(
+                this,
+                "Medical examination record deleted."
+            );
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
     private void clearForm() {
-        labelRow = 0;
         idField.setText("");
         empIdField.setText("");
+
         typeBox.setSelectedIndex(0);
-        examDateField.setText(LocalDate.now().format(DateTimeFormatter.ISO_DATE));
+
+        examDateField.setText(
+            LocalDate.now().format(
+                DateTimeFormatter.ISO_DATE
+            )
+        );
+
         physicianField.setText("");
         facilityField.setText("");
+
         bloodTypeBox.setSelectedIndex(0);
+
         bpField.setText("");
         hrField.setText("");
         heightField.setText("");
         weightField.setText("");
+
         visionLField.setText("");
         visionRField.setText("");
         hearingLField.setText("");
         hearingRField.setText("");
+
         xrayField.setText("");
         urineField.setText("");
         cbcField.setText("");
+
         findingsArea.setText("");
         recommendArea.setText("");
+
         fitBox.setSelected(true);
         statusBox.setSelectedIndex(0);
         remarksField.setText("");
+
         table.clearSelection();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private void setNullableInt(PreparedStatement p, int idx, String val)
-            throws SQLException {
-        if (val == null || val.isEmpty()) p.setNull(idx, Types.INTEGER);
-        else                              p.setInt(idx, Integer.parseInt(val));
+    private void setNullableInt(
+            PreparedStatement statement,
+            int parameterIndex,
+            String value
+    ) throws SQLException {
+        if (
+            value == null
+            || value.trim().isEmpty()
+        ) {
+            statement.setNull(
+                parameterIndex,
+                Types.INTEGER
+            );
+        } else {
+            statement.setInt(
+                parameterIndex,
+                Integer.parseInt(value.trim())
+            );
+        }
     }
 
-    private void setNullableDecimal(PreparedStatement p, int idx, String val)
-            throws SQLException {
-        if (val == null || val.isEmpty()) p.setNull(idx, Types.DECIMAL);
-        else                              p.setDouble(idx, Double.parseDouble(val));
+    private void setNullableDecimal(
+            PreparedStatement statement,
+            int parameterIndex,
+            String value
+    ) throws SQLException {
+        if (
+            value == null
+            || value.trim().isEmpty()
+        ) {
+            statement.setNull(
+                parameterIndex,
+                Types.DECIMAL
+            );
+        } else {
+            statement.setDouble(
+                parameterIndex,
+                Double.parseDouble(value.trim())
+            );
+        }
     }
 
-    private String safeStr(Object o) { return o == null ? "" : o.toString(); }
+    private String safeStr(Object value) {
+        return value == null
+            ? ""
+            : value.toString();
+    }
 
     private void export() {
-        JFileChooser fc = new JFileChooser();
-        fc.setSelectedFile(new File("medical_examinations.csv"));
-        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+        JFileChooser chooser =
+            new JFileChooser();
+
+        chooser.setSelectedFile(
+            new File(
+                "medical_examinations.csv"
+            )
+        );
+
+        int result =
+            chooser.showSaveDialog(this);
+
+        if (
+            result
+            == JFileChooser.APPROVE_OPTION
+        ) {
             try {
-                CsvExporter.export(table, fc.getSelectedFile());
-                Dialogs.info(this, "CSV exported.");
-            } catch (Exception ex) {
-                Dialogs.error(this, ex.getMessage());
+                CsvExporter.export(
+                    table,
+                    chooser.getSelectedFile()
+                );
+
+                Dialogs.info(
+                    this,
+                    "CSV exported."
+                );
+
+            } catch (Exception exception) {
+                Dialogs.error(
+                    this,
+                    exception.getMessage()
+                );
             }
         }
     }
-}   
+}

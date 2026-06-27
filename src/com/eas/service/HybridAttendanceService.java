@@ -180,7 +180,7 @@ public class HybridAttendanceService {
     public boolean verifyAccomplishment(int employeeId, LocalDate date, int managerUserId, String status, String remarks) {
         String employeeIdStr = String.valueOf(employeeId);
 
-        String updateAccomplishSql = "UPDATE offsite_accomplishments SET verification_status = ?, verified_by = ?, verified_at = NOW(), supervisor_remarks = ? WHERE employee_id = ? AND DATE(attendance_date) = ?";
+        String updateAccomplishSql = "UPDATE offsite_accomplishments SET verification_status = ?, verified_by = ?, verified_at = NOW(), manager_remarks = ? WHERE employee_id = ? AND DATE(attendance_date) = ?";
         String updateAttendanceRecordSql = "UPDATE attendance_records SET is_offsite_verified = ? WHERE employee_id = ? AND DATE(attendance_date) = ?";
 
         Connection conn = null;

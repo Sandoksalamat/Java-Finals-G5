@@ -2,571 +2,1359 @@ package com.eas.ui.user;
 
 import com.eas.config.Database;
 import com.eas.model.UserSession;
-import com.eas.service.*;
-import com.eas.util.*;
-import java.awt.*;
+import com.eas.service.AuditService;
+import com.eas.service.AuthService;
+import com.eas.util.Dialogs;
+import com.eas.util.UITheme;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
 import java.io.File;
-import java.sql.*;
-import javax.swing.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
-//== Unknown == 
-// H&S safety report 
-// Wellness program
-// Sick Employee monitoring
-// Pre-Employment & Annual med exam record
 public class UserProfilePanel extends JPanel {
 
     private final UserSession session;
 
-    private final JTextField
-        full      = new JTextField(22),
-        email     = new JTextField(22),
-        phone     = new JTextField(15),
-        address   = new JTextField(30),
-        emergency = new JTextField(25),
-        allergy   = new JTextField(30),
-        exist_medcon = new JTextField(30);
+    private final JTextField full = new JTextField(22);
+    private final JTextField email = new JTextField(22);
+    private final JTextField phone = new JTextField(15);
+    private final JTextField address = new JTextField(30);
+    private final JTextField emergency = new JTextField(25);
+    private final JTextField allergy = new JTextField(30);
+    private final JTextField existMedCon = new JTextField(30);
 
-    private final JPasswordField
-        oldp = new JPasswordField(15),
-        newp = new JPasswordField(15);
+    private final JPasswordField oldPassword = new JPasswordField(15);
+    private final JPasswordField newPassword = new JPasswordField(15);
 
-    public UserProfilePanel(UserSession s) {
-        session = s;
+    public UserProfilePanel(UserSession session) {
+        this.session = session;
+
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-        add(UITheme.title("My Profile and Password"), BorderLayout.NORTH);
 
-        // ── Employee Details ──────────────────────────────────────────────
-        JPanel f = new JPanel(new GridLayout(0, 2, 8, 8));
-        f.setBorder(BorderFactory.createTitledBorder("Employee Details"));
-        addField(f, "Full Name",          full);
-        addField(f, "Email",              email);
-        addField(f, "Phone",              phone);
-        addField(f, "Address",            address);
-        addField(f, "Emergency Contact",  emergency);
+        add(
+            UITheme.title("My Profile and Password"),
+            BorderLayout.NORTH
+        );
 
-        JButton save = UITheme.button("SAVE PROFILE");
-        f.add(save);
-        f.add(new JLabel(""));
+        /*
+         * Employee details
+         */
+        JPanel employeePanel = new JPanel(
+            new GridLayout(0, 2, 8, 8)
+        );
 
-        // ── Change Password ───────────────────────────────────────────────
-        JPanel pwd = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
-        pwd.setBorder(BorderFactory.createTitledBorder("Change Password"));
-        pwd.add(new JLabel("Current"));
-        pwd.add(oldp);
-        pwd.add(new JLabel("New"));
-        pwd.add(newp);
-        JButton change = UITheme.button("CHANGE PASSWORD");
-        pwd.add(change);
+        employeePanel.setBorder(
+            BorderFactory.createTitledBorder("Employee Details")
+        );
 
-        // ── Employee Medical Details ──────────────────────────────────────
-        JLabel certLabel    = new JLabel("No file selected");
-        JLabel injuryLabel  = new JLabel("No file selected");
-        JLabel healthLabel  = new JLabel("No file selected");
-        JLabel fitnessLabel = new JLabel("No file selected");
-        JLabel wellnessLabel = new JLabel("No file selected");
+        addField(employeePanel, "Full Name", full);
+        addField(employeePanel, "Email", email);
+        addField(employeePanel, "Phone", phone);
+        addField(employeePanel, "Address", address);
+        addField(
+            employeePanel,
+            "Emergency Contact",
+            emergency
+        );
 
-        JButton certBtn    = UITheme.button("Attach");
-        JButton injuryBtn  = UITheme.button("Attach");
-        JButton healthBtn  = UITheme.button("Attach");
-        JButton fitnessBtn = UITheme.button("Attach");
-        JButton wellnessBtn = UITheme.button("Attach");
+        JButton saveProfileButton =
+            UITheme.button("SAVE PROFILE");
 
-        certBtn.addActionListener(e    -> attachFile(certLabel));
-        injuryBtn.addActionListener(e  -> attachFile(injuryLabel));
-        healthBtn.addActionListener(e  -> attachFile(healthLabel));
-        fitnessBtn.addActionListener(e -> attachFile(fitnessLabel));
-        wellnessBtn.addActionListener(e -> attachFile(wellnessLabel));
+        employeePanel.add(saveProfileButton);
+        employeePanel.add(new JLabel(""));
 
-        // Blood type dropdown
-        String[] btypeOptions = {"-Select-", "A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"};
-        JComboBox<String> btypeDropdown = new JComboBox<>(btypeOptions);
+        /*
+         * Change password
+         */
+        JPanel passwordPanel = new JPanel(
+            new FlowLayout(FlowLayout.LEFT, 8, 8)
+        );
 
-        // Emergency medical notes textarea
-        JTextArea mednote = new JTextArea();
-        mednote.setLineWrap(true);
-        mednote.setWrapStyleWord(true);
+        passwordPanel.setBorder(
+            BorderFactory.createTitledBorder(
+                "Change Password"
+            )
+        );
 
-        JPanel p = new JPanel(new GridBagLayout());
-        p.setBorder(BorderFactory.createTitledBorder("Employee Medical Details"));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 8, 6, 8);
-        gbc.fill   = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
+        passwordPanel.add(new JLabel("Current"));
+        passwordPanel.add(oldPassword);
+        passwordPanel.add(new JLabel("New"));
+        passwordPanel.add(newPassword);
 
-        int row = 0;
+        JButton changePasswordButton =
+            UITheme.button("CHANGE PASSWORD");
 
-        // Blood Type
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        p.add(new JLabel("Blood Type"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1;
-        p.add(btypeDropdown, gbc);
-        gbc.gridx = 2; gbc.weightx = 0;
-        p.add(new JLabel(""), gbc);
-        row++;
+        passwordPanel.add(changePasswordButton);
 
-        // Allergy
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        p.add(new JLabel("Allergy"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1; gbc.gridwidth = 2;
-        p.add(allergy, gbc);
-        gbc.gridwidth = 1;
-        row++;
+        /*
+         * Employee medical details
+         */
+        JLabel certificateLabel =
+            new JLabel("No file selected");
 
-        // Existing Medical Condition
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        p.add(new JLabel("Existing Medical Condition"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1; gbc.gridwidth = 2;
-        p.add(exist_medcon, gbc);
-        gbc.gridwidth = 1;
-        row++;
+        JLabel injuryReportLabel =
+            new JLabel("No file selected");
 
-        // Emergency Medical Notes
-        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        p.add(new JLabel("Emergency Medical Notes"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1; gbc.gridwidth = 2; gbc.ipady = 60;
-        p.add(new JScrollPane(mednote), gbc);
-        gbc.ipady = 0; gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.WEST;
-        row++;
+        JLabel healthDeclarationLabel =
+            new JLabel("No file selected");
 
-        // Attachment rows
-        String[]  docLabels  = {
+        JLabel wellnessActivityLabel =
+            new JLabel("No file selected");
+
+        JButton certificateButton =
+            UITheme.button("Attach");
+
+        JButton injuryReportButton =
+            UITheme.button("Attach");
+
+        JButton healthDeclarationButton =
+            UITheme.button("Attach");
+
+        JButton wellnessActivityButton =
+            UITheme.button("Attach");
+
+        certificateButton.addActionListener(
+            event -> attachFile(certificateLabel)
+        );
+
+        injuryReportButton.addActionListener(
+            event -> attachFile(injuryReportLabel)
+        );
+
+        healthDeclarationButton.addActionListener(
+            event -> attachFile(healthDeclarationLabel)
+        );
+
+        wellnessActivityButton.addActionListener(
+            event -> attachFile(wellnessActivityLabel)
+        );
+
+        String[] bloodTypeOptions = {
+            "-Select-",
+            "A+",
+            "A-",
+            "AB+",
+            "AB-",
+            "B+",
+            "B-",
+            "O+",
+            "O-"
+        };
+
+        JComboBox<String> bloodTypeDropdown =
+            new JComboBox<>(bloodTypeOptions);
+
+        JTextArea medicalNotesArea = new JTextArea();
+
+        medicalNotesArea.setLineWrap(true);
+        medicalNotesArea.setWrapStyleWord(true);
+
+        JPanel medicalPanel =
+            new JPanel(new GridBagLayout());
+
+        medicalPanel.setBorder(
+            BorderFactory.createTitledBorder(
+                "Employee Medical Details"
+            )
+        );
+
+        GridBagConstraints medicalConstraints =
+            new GridBagConstraints();
+
+        medicalConstraints.insets =
+            new Insets(6, 8, 6, 8);
+
+        medicalConstraints.fill =
+            GridBagConstraints.HORIZONTAL;
+
+        medicalConstraints.anchor =
+            GridBagConstraints.WEST;
+
+        int medicalRow = 0;
+
+        /*
+         * Blood type
+         */
+        medicalConstraints.gridx = 0;
+        medicalConstraints.gridy = medicalRow;
+        medicalConstraints.weightx = 0;
+
+        medicalPanel.add(
+            new JLabel("Blood Type"),
+            medicalConstraints
+        );
+
+        medicalConstraints.gridx = 1;
+        medicalConstraints.weightx = 1;
+
+        medicalPanel.add(
+            bloodTypeDropdown,
+            medicalConstraints
+        );
+
+        medicalConstraints.gridx = 2;
+        medicalConstraints.weightx = 0;
+
+        medicalPanel.add(
+            new JLabel(""),
+            medicalConstraints
+        );
+
+        medicalRow++;
+
+        /*
+         * Allergy
+         */
+        medicalConstraints.gridx = 0;
+        medicalConstraints.gridy = medicalRow;
+        medicalConstraints.weightx = 0;
+
+        medicalPanel.add(
+            new JLabel("Allergy"),
+            medicalConstraints
+        );
+
+        medicalConstraints.gridx = 1;
+        medicalConstraints.weightx = 1;
+        medicalConstraints.gridwidth = 2;
+
+        medicalPanel.add(
+            allergy,
+            medicalConstraints
+        );
+
+        medicalConstraints.gridwidth = 1;
+        medicalRow++;
+
+        /*
+         * Existing medical condition
+         */
+        medicalConstraints.gridx = 0;
+        medicalConstraints.gridy = medicalRow;
+        medicalConstraints.weightx = 0;
+
+        medicalPanel.add(
+            new JLabel("Existing Medical Condition"),
+            medicalConstraints
+        );
+
+        medicalConstraints.gridx = 1;
+        medicalConstraints.weightx = 1;
+        medicalConstraints.gridwidth = 2;
+
+        medicalPanel.add(
+            existMedCon,
+            medicalConstraints
+        );
+
+        medicalConstraints.gridwidth = 1;
+        medicalRow++;
+
+        /*
+         * Emergency medical notes
+         */
+        medicalConstraints.gridx = 0;
+        medicalConstraints.gridy = medicalRow;
+        medicalConstraints.weightx = 0;
+        medicalConstraints.anchor =
+            GridBagConstraints.NORTHWEST;
+
+        medicalPanel.add(
+            new JLabel("Emergency Medical Notes"),
+            medicalConstraints
+        );
+
+        medicalConstraints.gridx = 1;
+        medicalConstraints.weightx = 1;
+        medicalConstraints.gridwidth = 2;
+        medicalConstraints.ipady = 60;
+
+        medicalPanel.add(
+            new JScrollPane(medicalNotesArea),
+            medicalConstraints
+        );
+
+        medicalConstraints.ipady = 0;
+        medicalConstraints.gridwidth = 1;
+        medicalConstraints.anchor =
+            GridBagConstraints.WEST;
+
+        medicalRow++;
+
+        /*
+         * Medical document attachments
+         */
+        String[] documentLabels = {
             "Medical Certificate",
             "Workplace Injury Report",
             "Health Declaration",
-            "Fitness to Work Clearance",
             "Wellness Activity"
         };
-        JLabel[]  fileLabels = { certLabel, injuryLabel, healthLabel, fitnessLabel, wellnessLabel };
-        JButton[] attachBtns = { certBtn,   injuryBtn,   healthBtn,   fitnessBtn,   wellnessBtn   };
 
-        for (int i = 0; i < docLabels.length; i++) {
-            gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0;
-            p.add(new JLabel(docLabels[i]), gbc);
-            gbc.gridx = 1; gbc.weightx = 1;
-            p.add(fileLabels[i], gbc);
-            gbc.gridx = 2; gbc.weightx = 0;
-            p.add(attachBtns[i], gbc);
-            row++;
+        JLabel[] fileLabels = {
+            certificateLabel,
+            injuryReportLabel,
+            healthDeclarationLabel,
+            wellnessActivityLabel
+        };
+
+        JButton[] attachmentButtons = {
+            certificateButton,
+            injuryReportButton,
+            healthDeclarationButton,
+            wellnessActivityButton
+        };
+
+        for (int i = 0; i < documentLabels.length; i++) {
+            medicalConstraints.gridx = 0;
+            medicalConstraints.gridy = medicalRow;
+            medicalConstraints.weightx = 0;
+
+            medicalPanel.add(
+                new JLabel(documentLabels[i]),
+                medicalConstraints
+            );
+
+            medicalConstraints.gridx = 1;
+            medicalConstraints.weightx = 1;
+
+            medicalPanel.add(
+                fileLabels[i],
+                medicalConstraints
+            );
+
+            medicalConstraints.gridx = 2;
+            medicalConstraints.weightx = 0;
+
+            medicalPanel.add(
+                attachmentButtons[i],
+                medicalConstraints
+            );
+
+            medicalRow++;
         }
 
-        // Save medical button
-        JButton saveMedical = UITheme.button("SAVE MEDICAL DETAILS");
-        gbc.gridx = 0; gbc.gridy = row;
-        gbc.gridwidth = 3;
-        gbc.anchor = GridBagConstraints.CENTER;
-        gbc.fill   = GridBagConstraints.NONE;
-        p.add(saveMedical, gbc);
-        gbc.gridwidth = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
+        JButton saveMedicalButton =
+            UITheme.button("SAVE MEDICAL DETAILS");
 
-        // ── Occupational Safety Checklist ─────────────────────────────────
-        JPanel cb = new JPanel(new GridBagLayout());
-        cb.setBorder(BorderFactory.createTitledBorder("Occupational Safety Checklist"));
+        medicalConstraints.gridx = 0;
+        medicalConstraints.gridy = medicalRow;
+        medicalConstraints.gridwidth = 3;
+        medicalConstraints.anchor =
+            GridBagConstraints.CENTER;
 
-        GridBagConstraints gbc2 = new GridBagConstraints();
-        gbc2.insets = new Insets(6, 8, 6, 8);
-        gbc2.fill   = GridBagConstraints.HORIZONTAL;
-        gbc2.anchor = GridBagConstraints.WEST;
+        medicalConstraints.fill =
+            GridBagConstraints.NONE;
 
-        int row2 = 0;
+        medicalPanel.add(
+            saveMedicalButton,
+            medicalConstraints
+        );
 
-        // Department selector
-        JLabel dept_selector = new JLabel("Select Department:");
-        String[] dept_Options = {"-Select-", "Office", "Laboratory", "Warehouse"};
-        JComboBox<String> dept_dropdown = new JComboBox<>(dept_Options);
+        medicalConstraints.gridwidth = 1;
+        medicalConstraints.fill =
+            GridBagConstraints.HORIZONTAL;
 
-        gbc2.gridx = 0; gbc2.gridy = row2; gbc2.weightx = 0;
-        cb.add(dept_selector, gbc2);
-        gbc2.gridx = 1; gbc2.weightx = 1; gbc2.gridwidth = 2;
-        cb.add(dept_dropdown, gbc2);
-        gbc2.gridwidth = 1;
-        row2++;
+        medicalConstraints.anchor =
+            GridBagConstraints.WEST;
 
-        // Container for the dynamic checklist items
-        JPanel checklistItems = new JPanel(new GridBagLayout());
-        gbc2.gridx = 0; gbc2.gridy = row2;
-        gbc2.gridwidth = 3; gbc2.weightx = 1;
-        cb.add(checklistItems, gbc2);
-        gbc2.gridwidth = 1;
-        row2++;
+        /*
+         * Occupational safety checklist
+         */
+        JPanel checklistPanel =
+            new JPanel(new GridBagLayout());
 
-        // Status label — confirms last save, shown under the checklist
+        checklistPanel.setBorder(
+            BorderFactory.createTitledBorder(
+                "Occupational Safety Checklist"
+            )
+        );
+
+        GridBagConstraints checklistConstraints =
+            new GridBagConstraints();
+
+        checklistConstraints.insets =
+            new Insets(6, 8, 6, 8);
+
+        checklistConstraints.fill =
+            GridBagConstraints.HORIZONTAL;
+
+        checklistConstraints.anchor =
+            GridBagConstraints.WEST;
+
+        int checklistRow = 0;
+
+        JLabel departmentLabel =
+            new JLabel("Select Department:");
+
+        String[] departmentOptions = {
+            "-Select-",
+            "Office",
+            "Laboratory",
+            "Warehouse"
+        };
+
+        JComboBox<String> departmentDropdown =
+            new JComboBox<>(departmentOptions);
+
+        checklistConstraints.gridx = 0;
+        checklistConstraints.gridy = checklistRow;
+        checklistConstraints.weightx = 0;
+
+        checklistPanel.add(
+            departmentLabel,
+            checklistConstraints
+        );
+
+        checklistConstraints.gridx = 1;
+        checklistConstraints.weightx = 1;
+        checklistConstraints.gridwidth = 2;
+
+        checklistPanel.add(
+            departmentDropdown,
+            checklistConstraints
+        );
+
+        checklistConstraints.gridwidth = 1;
+        checklistRow++;
+
+        JPanel checklistItems =
+            new JPanel(new GridBagLayout());
+
+        checklistConstraints.gridx = 0;
+        checklistConstraints.gridy = checklistRow;
+        checklistConstraints.gridwidth = 3;
+        checklistConstraints.weightx = 1;
+
+        checklistPanel.add(
+            checklistItems,
+            checklistConstraints
+        );
+
+        checklistConstraints.gridwidth = 1;
+        checklistRow++;
+
         JLabel checklistStatus = new JLabel(" ");
-        checklistStatus.setFont(new Font("SansSerif", Font.ITALIC, 11));
+
+        checklistStatus.setFont(
+            new Font(
+                "SansSerif",
+                Font.ITALIC,
+                11
+            )
+        );
+
         checklistStatus.setForeground(Color.GRAY);
-        gbc2.gridx = 0; gbc2.gridy = row2;
-        gbc2.gridwidth = 3;
-        cb.add(checklistStatus, gbc2);
-        gbc2.gridwidth = 1;
-        row2++;
 
-        // Save checklist button
-        JButton saveChecklist = UITheme.button("SAVE CHECKLIST");
-        gbc2.gridx = 0; gbc2.gridy = row2;
-        gbc2.gridwidth = 3;
-        gbc2.anchor = GridBagConstraints.CENTER;
-        gbc2.fill   = GridBagConstraints.NONE;
-        cb.add(saveChecklist, gbc2);
-        gbc2.gridwidth = 1;
-        gbc2.fill = GridBagConstraints.HORIZONTAL;
-        gbc2.anchor = GridBagConstraints.WEST;
+        checklistConstraints.gridx = 0;
+        checklistConstraints.gridy = checklistRow;
+        checklistConstraints.gridwidth = 3;
 
-        // Rebuilds checklist items for the selected department and loads any
-        // previously saved checked state for this employee from the database.
-        dept_dropdown.addActionListener(e -> {
+        checklistPanel.add(
+            checklistStatus,
+            checklistConstraints
+        );
+
+        checklistConstraints.gridwidth = 1;
+        checklistRow++;
+
+        JButton saveChecklistButton =
+            UITheme.button("SAVE CHECKLIST");
+
+        checklistConstraints.gridx = 0;
+        checklistConstraints.gridy = checklistRow;
+        checklistConstraints.gridwidth = 3;
+        checklistConstraints.anchor =
+            GridBagConstraints.CENTER;
+
+        checklistConstraints.fill =
+            GridBagConstraints.NONE;
+
+        checklistPanel.add(
+            saveChecklistButton,
+            checklistConstraints
+        );
+
+        checklistConstraints.gridwidth = 1;
+        checklistConstraints.fill =
+            GridBagConstraints.HORIZONTAL;
+
+        checklistConstraints.anchor =
+            GridBagConstraints.WEST;
+
+        departmentDropdown.addActionListener(event -> {
             checklistItems.removeAll();
             checklistStatus.setText(" ");
 
-            String selected = (String) dept_dropdown.getSelectedItem();
-            buildChecklistItems(checklistItems, selected);
-            loadChecklistState(checklistItems, selected);
+            String selectedDepartment =
+                (String) departmentDropdown.getSelectedItem();
+
+            buildChecklistItems(
+                checklistItems,
+                selectedDepartment
+            );
+
+            loadChecklistState(
+                checklistItems,
+                selectedDepartment
+            );
 
             checklistItems.revalidate();
             checklistItems.repaint();
         });
 
-        saveChecklist.addActionListener(e -> {
-            String selected = (String) dept_dropdown.getSelectedItem();
-            if (selected == null || "-Select-".equals(selected)) {
-                Dialogs.error(this, "Please select a department before saving the checklist.");
+        saveChecklistButton.addActionListener(event -> {
+            String selectedDepartment =
+                (String) departmentDropdown.getSelectedItem();
+
+            if (
+                selectedDepartment == null
+                || "-Select-".equals(selectedDepartment)
+            ) {
+                Dialogs.error(
+                    this,
+                    "Please select a department before saving "
+                    + "the checklist."
+                );
+
                 return;
             }
-            saveChecklistState(checklistItems, selected, checklistStatus);
+
+            saveChecklistState(
+                checklistItems,
+                selectedDepartment,
+                checklistStatus
+            );
         });
 
-        // ── Assemble center panel ─────────────────────────────────────────
-        JPanel medAndChecklist = new JPanel(new BorderLayout(0, 10));
-        medAndChecklist.add(p,  BorderLayout.NORTH);
-        medAndChecklist.add(cb, BorderLayout.CENTER);
+        /*
+         * Assemble the panel
+         */
+        JPanel medicalAndChecklistPanel =
+            new JPanel(new BorderLayout(0, 10));
 
-        JPanel center = new JPanel(new BorderLayout(0, 10));
-        center.add(f,              BorderLayout.NORTH);
-        center.add(medAndChecklist, BorderLayout.CENTER);
-        center.add(pwd,            BorderLayout.SOUTH);
-        add(center, BorderLayout.CENTER);
+        medicalAndChecklistPanel.add(
+            medicalPanel,
+            BorderLayout.NORTH
+        );
 
-        // ── Wire up actions ───────────────────────────────────────────────
-        save.addActionListener(e -> save());
+        medicalAndChecklistPanel.add(
+            checklistPanel,
+            BorderLayout.CENTER
+        );
 
-        saveMedical.addActionListener(e -> saveMedical(btypeDropdown, mednote,
-        certLabel, injuryLabel, healthLabel, fitnessLabel, wellnessLabel));
-        
-        change.addActionListener(e -> change());
+        JPanel centerPanel =
+            new JPanel(new BorderLayout(0, 10));
 
-        JScrollPane scroll = new JScrollPane(center);
-        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        scroll.setBorder(null);
-        add(scroll, BorderLayout.CENTER);
+        centerPanel.add(
+            employeePanel,
+            BorderLayout.NORTH
+        );
 
-        load();
-        loadMedical(btypeDropdown, mednote,
-            certLabel, injuryLabel, healthLabel, fitnessLabel, wellnessLabel);
+        centerPanel.add(
+            medicalAndChecklistPanel,
+            BorderLayout.CENTER
+        );
+
+        centerPanel.add(
+            passwordPanel,
+            BorderLayout.SOUTH
+        );
+
+        JScrollPane scrollPane =
+            new JScrollPane(centerPanel);
+
+        scrollPane.setVerticalScrollBarPolicy(
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+        );
+
+        scrollPane.setHorizontalScrollBarPolicy(
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
+
+        scrollPane
+            .getVerticalScrollBar()
+            .setUnitIncrement(16);
+
+        scrollPane.setBorder(null);
+
+        add(scrollPane, BorderLayout.CENTER);
+
+        /*
+         * Button actions
+         */
+        saveProfileButton.addActionListener(
+            event -> saveProfile()
+        );
+
+        saveMedicalButton.addActionListener(
+            event -> saveMedical(
+                bloodTypeDropdown,
+                medicalNotesArea,
+                certificateLabel,
+                injuryReportLabel,
+                healthDeclarationLabel,
+                wellnessActivityLabel
+            )
+        );
+
+        changePasswordButton.addActionListener(
+            event -> changePassword()
+        );
+
+        /*
+         * Initial data loading
+         */
+        loadProfile();
+
+        loadMedical(
+            bloodTypeDropdown,
+            medicalNotesArea,
+            certificateLabel,
+            injuryReportLabel,
+            healthDeclarationLabel,
+            wellnessActivityLabel
+        );
     }
 
-    private void addField(JPanel p, String label, JTextField field) {
-        p.add(new JLabel(label));
-        p.add(field);
+    private void addField(
+            JPanel panel,
+            String label,
+            JTextField field
+    ) {
+        panel.add(new JLabel(label));
+        panel.add(field);
     }
 
     private void attachFile(JLabel label) {
         JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
-            "Documents (*.pdf, *.jpg, *.png)", "pdf", "jpg", "jpeg", "png"
-        ));
+
+        chooser.setFileFilter(
+            new javax.swing.filechooser.FileNameExtensionFilter(
+                "Documents (*.pdf, *.jpg, *.png)",
+                "pdf",
+                "jpg",
+                "jpeg",
+                "png"
+            )
+        );
+
         int result = chooser.showOpenDialog(this);
+
         if (result == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
             label.setText(file.getName());
         }
     }
 
-    private void saveMedical(JComboBox<String> btypeDropdown, JTextArea mednote,
-            JLabel certLabel, JLabel injuryLabel, JLabel healthLabel,
-            JLabel fitnessLabel, JLabel wellnessLabel) {
-        String btype = (String) btypeDropdown.getSelectedItem();
-        if ("-Select-".equals(btype)) btype = null;
+    private void saveMedical(
+            JComboBox<String> bloodTypeDropdown,
+            JTextArea medicalNotesArea,
+            JLabel certificateLabel,
+            JLabel injuryReportLabel,
+            JLabel healthDeclarationLabel,
+            JLabel wellnessActivityLabel
+    ) {
+        String bloodType =
+            (String) bloodTypeDropdown.getSelectedItem();
 
-        try (Connection c = Database.getConnection();
-            PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO employee_medical_details " +
-                "  (employee_id, blood_type, allergy, existing_condition, emergency_notes, " +
-                "   medical_certificate, workplace_injury_report, health_declaration, " +
-                "   fitness_to_work_clearance, wellness_activity) " +
-                "VALUES ((SELECT id FROM employees WHERE user_id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
-                "ON DUPLICATE KEY UPDATE " +
-                "  blood_type               = VALUES(blood_type), " +
-                "  allergy                  = VALUES(allergy), " +
-                "  existing_condition       = VALUES(existing_condition), " +
-                "  emergency_notes          = VALUES(emergency_notes), " +
-                "  medical_certificate      = VALUES(medical_certificate), " +
-                "  workplace_injury_report  = VALUES(workplace_injury_report), " +
-                "  health_declaration       = VALUES(health_declaration), " +
-                "  fitness_to_work_clearance = VALUES(fitness_to_work_clearance), " +
-                "  wellness_activity        = VALUES(wellness_activity)")) {
+        if ("-Select-".equals(bloodType)) {
+            bloodType = null;
+        }
 
-            ps.setInt(1, session.getId());
-            ps.setString(2, btype);
-            ps.setString(3, allergy.getText().trim());
-            ps.setString(4, exist_medcon.getText().trim());
-            ps.setString(5, mednote.getText().trim());
+        String sql =
+            "INSERT INTO employee_medical_details " +
+            "(employee_id, blood_type, allergy, " +
+            " existing_condition, emergency_notes, " +
+            " medical_certificate, workplace_injury_report, " +
+            " health_declaration, wellness_activity) " +
+            "VALUES (" +
+            " (SELECT id FROM employees WHERE user_id = ?), " +
+            " ?, ?, ?, ?, ?, ?, ?, ?" +
+            ") " +
+            "ON DUPLICATE KEY UPDATE " +
+            "blood_type = VALUES(blood_type), " +
+            "allergy = VALUES(allergy), " +
+            "existing_condition = VALUES(existing_condition), " +
+            "emergency_notes = VALUES(emergency_notes), " +
+            "medical_certificate = " +
+            "VALUES(medical_certificate), " +
+            "workplace_injury_report = " +
+            "VALUES(workplace_injury_report), " +
+            "health_declaration = " +
+            "VALUES(health_declaration), " +
+            "wellness_activity = VALUES(wellness_activity)";
 
-            // File labels: store the filename text, or null if still "No file selected"
-            ps.setString(6,  toPath(certLabel));
-            ps.setString(7,  toPath(injuryLabel));
-            ps.setString(8,  toPath(healthLabel));
-            ps.setString(9,  toPath(fitnessLabel));
-            ps.setString(10, toPath(wellnessLabel));
+        try (
+            Connection connection =
+                Database.getConnection();
 
-            ps.executeUpdate();
-            AuditService.log(session.getId(), "UPDATE", "MEDICAL", "Updated employee medical details.");
-            Dialogs.info(this, "Medical details saved.");
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setInt(
+                1,
+                session.getId()
+            );
 
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+            statement.setString(
+                2,
+                bloodType
+            );
+
+            statement.setString(
+                3,
+                allergy.getText().trim()
+            );
+
+            statement.setString(
+                4,
+                existMedCon.getText().trim()
+            );
+
+            statement.setString(
+                5,
+                medicalNotesArea.getText().trim()
+            );
+
+            statement.setString(
+                6,
+                toPath(certificateLabel)
+            );
+
+            statement.setString(
+                7,
+                toPath(injuryReportLabel)
+            );
+
+            statement.setString(
+                8,
+                toPath(healthDeclarationLabel)
+            );
+
+            statement.setString(
+                9,
+                toPath(wellnessActivityLabel)
+            );
+
+            statement.executeUpdate();
+
+            AuditService.log(
+                session.getId(),
+                "UPDATE",
+                "MEDICAL",
+                "Updated employee medical details."
+            );
+
+            Dialogs.info(
+                this,
+                "Medical details saved."
+            );
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
-    private void loadMedical(JComboBox<String> btypeDropdown, JTextArea mednote,
-                         JLabel certLabel, JLabel injuryLabel, JLabel healthLabel,
-                         JLabel fitnessLabel, JLabel wellnessLabel) {
-        try (Connection c = Database.getConnection();
-            PreparedStatement ps = c.prepareStatement(
-                "SELECT m.blood_type, m.allergy, m.existing_condition, m.emergency_notes, " +
-                "       m.medical_certificate, m.workplace_injury_report, m.health_declaration, " +
-                "       m.wellness_activity " +
-                "FROM employee_medical_details m " +
-                "JOIN employees e ON m.employee_id = e.id " +
-                "WHERE e.user_id = ?")) {
+    private void loadMedical(
+            JComboBox<String> bloodTypeDropdown,
+            JTextArea medicalNotesArea,
+            JLabel certificateLabel,
+            JLabel injuryReportLabel,
+            JLabel healthDeclarationLabel,
+            JLabel wellnessActivityLabel
+    ) {
+        String sql =
+            "SELECT " +
+            "m.blood_type, " +
+            "m.allergy, " +
+            "m.existing_condition, " +
+            "m.emergency_notes, " +
+            "m.medical_certificate, " +
+            "m.workplace_injury_report, " +
+            "m.health_declaration, " +
+            "m.wellness_activity " +
+            "FROM employee_medical_details m " +
+            "JOIN employees e " +
+            "ON m.employee_id = e.id " +
+            "WHERE e.user_id = ?";
 
-            ps.setInt(1, session.getId());
-            try (ResultSet r = ps.executeQuery()) {
-                if (r.next()) {
-                    String btype = r.getString("blood_type");
-                    if (btype != null) btypeDropdown.setSelectedItem(btype);
+        try (
+            Connection connection =
+                Database.getConnection();
 
-                    allergy.setText(r.getString("allergy") != null ? r.getString("allergy") : "");
-                    exist_medcon.setText(r.getString("existing_condition") != null ? r.getString("existing_condition") : "");
-                    mednote.setText(r.getString("emergency_notes") != null ? r.getString("emergency_notes") : "");
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setInt(
+                1,
+                session.getId()
+            );
 
-                    setFileLabel(certLabel,    r.getString("medical_certificate"));
-                    setFileLabel(injuryLabel,  r.getString("workplace_injury_report"));
-                    setFileLabel(healthLabel,  r.getString("health_declaration"));
-                    setFileLabel(wellnessLabel,r.getString("wellness_activity"));
+            try (
+                ResultSet resultSet =
+                    statement.executeQuery()
+            ) {
+                if (resultSet.next()) {
+                    String bloodType =
+                        resultSet.getString("blood_type");
+
+                    if (bloodType != null) {
+                        bloodTypeDropdown.setSelectedItem(
+                            bloodType
+                        );
+                    } else {
+                        bloodTypeDropdown.setSelectedItem(
+                            "-Select-"
+                        );
+                    }
+
+                    allergy.setText(
+                        safeDatabaseText(
+                            resultSet.getString("allergy")
+                        )
+                    );
+
+                    existMedCon.setText(
+                        safeDatabaseText(
+                            resultSet.getString(
+                                "existing_condition"
+                            )
+                        )
+                    );
+
+                    medicalNotesArea.setText(
+                        safeDatabaseText(
+                            resultSet.getString(
+                                "emergency_notes"
+                            )
+                        )
+                    );
+
+                    setFileLabel(
+                        certificateLabel,
+                        resultSet.getString(
+                            "medical_certificate"
+                        )
+                    );
+
+                    setFileLabel(
+                        injuryReportLabel,
+                        resultSet.getString(
+                            "workplace_injury_report"
+                        )
+                    );
+
+                    setFileLabel(
+                        healthDeclarationLabel,
+                        resultSet.getString(
+                            "health_declaration"
+                        )
+                    );
+
+                    setFileLabel(
+                        wellnessActivityLabel,
+                        resultSet.getString(
+                            "wellness_activity"
+                        )
+                    );
                 }
             }
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
-    private void setFileLabel(JLabel label, String path) {
-        label.setText(path != null ? path : "No file selected");
+    private void setFileLabel(
+            JLabel label,
+            String path
+    ) {
+        if (path == null || path.trim().isEmpty()) {
+            label.setText("No file selected");
+        } else {
+            label.setText(path);
+        }
     }
 
-    // ── Occupational Safety Checklist helpers ───────────────────────────────
+    private String safeDatabaseText(String value) {
+        return value == null ? "" : value;
+    }
 
-    /** Master list of checklist item labels per department. Single source of truth
-     *  so build, load, and save all stay in sync with the same item text. */
-    private static final java.util.Map<String, String[]> CHECKLIST_ITEMS = java.util.Map.of(
-        "Office", new String[]{
-            "Ergonomic workstation setup completed",
-            "Emergency exits identified",
-            "Fire extinguisher location noted"
-        },
-        "Laboratory", new String[]{
-            "PPE worn before entering lab",
-            "Chemical storage labels verified",
-            "Eyewash station accessible"
-        },
-        "Warehouse", new String[]{
-            "Forklift path clear of obstructions",
-            "Safety footwear worn",
-            "Load limits on shelving checked"
+    private static final java.util.Map<String, String[]>
+        CHECKLIST_ITEMS = java.util.Map.of(
+
+            "Office",
+            new String[]{
+                "Ergonomic workstation setup completed",
+                "Emergency exits identified",
+                "Fire extinguisher location noted"
+            },
+
+            "Laboratory",
+            new String[]{
+                "PPE worn before entering lab",
+                "Chemical storage labels verified",
+                "Eyewash station accessible"
+            },
+
+            "Warehouse",
+            new String[]{
+                "Forklift path clear of obstructions",
+                "Safety footwear worn",
+                "Load limits on shelving checked"
+            }
+        );
+
+    private void buildChecklistItems(
+            JPanel checklistItems,
+            String department
+    ) {
+        String[] items =
+            CHECKLIST_ITEMS.get(department);
+
+        if (items == null) {
+            return;
         }
-    );
 
-    /** Builds the JCheckBox rows for the selected department into the given container. */
-    private void buildChecklistItems(JPanel checklistItems, String department) {
-        String[] items = CHECKLIST_ITEMS.get(department);
-        if (items == null) return; // "-Select-" or unknown
+        GridBagConstraints constraints =
+            new GridBagConstraints();
 
-        GridBagConstraints ic = new GridBagConstraints();
-        ic.insets = new Insets(4, 8, 4, 8);
-        ic.fill   = GridBagConstraints.HORIZONTAL;
-        ic.anchor = GridBagConstraints.WEST;
-        ic.gridx  = 0;
-        int r = 0;
+        constraints.insets =
+            new Insets(4, 8, 4, 8);
 
-        ic.gridy = r++;
-        checklistItems.add(new JLabel(department + " Checklist"), ic);
+        constraints.fill =
+            GridBagConstraints.HORIZONTAL;
+
+        constraints.anchor =
+            GridBagConstraints.WEST;
+
+        constraints.gridx = 0;
+
+        int row = 0;
+
+        constraints.gridy = row++;
+
+        checklistItems.add(
+            new JLabel(department + " Checklist"),
+            constraints
+        );
 
         for (String item : items) {
-            JCheckBox box = new JCheckBox(item);
-            box.setName(item); // used as the lookup key on save
-            ic.gridy = r++;
-            checklistItems.add(box, ic);
+            JCheckBox checkBox =
+                new JCheckBox(item);
+
+            checkBox.setName(item);
+
+            constraints.gridy = row++;
+
+            checklistItems.add(
+                checkBox,
+                constraints
+            );
         }
     }
 
-    /** Loads this employee's previously saved checked state for the department
-     *  and applies it to the JCheckBox components just built by buildChecklistItems. */
-    private void loadChecklistState(JPanel checklistItems, String department) {
-        if (!CHECKLIST_ITEMS.containsKey(department)) return;
+    private void loadChecklistState(
+            JPanel checklistItems,
+            String department
+    ) {
+        if (!CHECKLIST_ITEMS.containsKey(department)) {
+            return;
+        }
 
         String sql =
             "SELECT item_label, is_checked " +
             "FROM safety_checklist_records sc " +
-            "JOIN employees e ON sc.employee_id = e.id " +
-            "WHERE e.user_id = ? AND sc.department_type = ?";
+            "JOIN employees e " +
+            "ON sc.employee_id = e.id " +
+            "WHERE e.user_id = ? " +
+            "AND sc.department_type = ?";
 
-        java.util.Map<String, Boolean> saved = new java.util.HashMap<>();
+        java.util.Map<String, Boolean> savedStates =
+            new java.util.HashMap<>();
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(sql)) {
+        try (
+            Connection connection =
+                Database.getConnection();
 
-            p.setInt(1, session.getId());
-            p.setString(2, department);
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setInt(
+                1,
+                session.getId()
+            );
 
-            try (ResultSet rs = p.executeQuery()) {
-                while (rs.next()) {
-                    saved.put(rs.getString("item_label"), rs.getBoolean("is_checked"));
+            statement.setString(
+                2,
+                department
+            );
+
+            try (
+                ResultSet resultSet =
+                    statement.executeQuery()
+            ) {
+                while (resultSet.next()) {
+                    savedStates.put(
+                        resultSet.getString("item_label"),
+                        resultSet.getBoolean("is_checked")
+                    );
                 }
             }
 
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
+
             return;
         }
 
-        for (Component comp : checklistItems.getComponents()) {
-            if (comp instanceof JCheckBox box) {
-                Boolean checked = saved.get(box.getName());
-                if (checked != null) box.setSelected(checked);
+        for (
+            Component component :
+            checklistItems.getComponents()
+        ) {
+            if (component instanceof JCheckBox) {
+                JCheckBox checkBox =
+                    (JCheckBox) component;
+
+                Boolean checked =
+                    savedStates.get(checkBox.getName());
+
+                if (checked != null) {
+                    checkBox.setSelected(checked);
+                }
             }
         }
     }
 
-    /** Persists the current checkbox states for the selected department. Uses
-     *  INSERT ... ON DUPLICATE KEY UPDATE so re-saving simply updates is_checked. */
-    private void saveChecklistState(JPanel checklistItems, String department, JLabel statusLabel) {
+    private void saveChecklistState(
+            JPanel checklistItems,
+            String department,
+            JLabel statusLabel
+    ) {
         String sql =
             "INSERT INTO safety_checklist_records " +
-            "  (employee_id, department_type, item_label, is_checked) " +
-            "VALUES ((SELECT id FROM employees WHERE user_id = ?), ?, ?, ?) " +
-            "ON DUPLICATE KEY UPDATE is_checked = VALUES(is_checked)";
+            "(employee_id, department_type, " +
+            " item_label, is_checked) " +
+            "VALUES (" +
+            " (SELECT id FROM employees WHERE user_id = ?), " +
+            " ?, ?, ?" +
+            ") " +
+            "ON DUPLICATE KEY UPDATE " +
+            "is_checked = VALUES(is_checked)";
 
-        try (Connection c = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(sql)) {
+        try (
+            Connection connection =
+                Database.getConnection();
 
-            boolean any = false;
-            for (Component comp : checklistItems.getComponents()) {
-                if (comp instanceof JCheckBox box) {
-                    p.setInt(1, session.getId());
-                    p.setString(2, department);
-                    p.setString(3, box.getName());
-                    p.setBoolean(4, box.isSelected());
-                    p.executeUpdate();
-                    any = true;
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            boolean foundChecklistItem = false;
+
+            for (
+                Component component :
+                checklistItems.getComponents()
+            ) {
+                if (component instanceof JCheckBox) {
+                    JCheckBox checkBox =
+                        (JCheckBox) component;
+
+                    statement.setInt(
+                        1,
+                        session.getId()
+                    );
+
+                    statement.setString(
+                        2,
+                        department
+                    );
+
+                    statement.setString(
+                        3,
+                        checkBox.getName()
+                    );
+
+                    statement.setBoolean(
+                        4,
+                        checkBox.isSelected()
+                    );
+
+                    statement.executeUpdate();
+                    foundChecklistItem = true;
                 }
             }
 
-            if (!any) {
-                Dialogs.error(this, "No checklist items to save for this department.");
+            if (!foundChecklistItem) {
+                Dialogs.error(
+                    this,
+                    "No checklist items to save for this "
+                    + "department."
+                );
+
                 return;
             }
 
-            AuditService.log(session.getId(), "UPDATE", "SAFETY_CHECKLIST",
-                "Saved " + department + " safety checklist.");
+            AuditService.log(
+                session.getId(),
+                "UPDATE",
+                "SAFETY_CHECKLIST",
+                "Saved " + department
+                + " safety checklist."
+            );
 
-            statusLabel.setForeground(new Color(0, 128, 0));
-            statusLabel.setText("Checklist saved at " +
-                java.time.LocalTime.now().withNano(0));
+            statusLabel.setForeground(
+                new Color(0, 128, 0)
+            );
 
-            Dialogs.info(this, "Safety checklist saved.");
+            statusLabel.setText(
+                "Checklist saved at "
+                + java.time.LocalTime
+                    .now()
+                    .withNano(0)
+            );
 
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+            Dialogs.info(
+                this,
+                "Safety checklist saved."
+            );
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
-/** Returns null when the user hasn't picked a file yet. */
     private String toPath(JLabel fileLabel) {
         String text = fileLabel.getText();
-        return "No file selected".equals(text) ? null : text;
+
+        if (
+            text == null
+            || text.trim().isEmpty()
+            || "No file selected".equals(text)
+        ) {
+            return null;
+        }
+
+        return text;
     }
 
-    private void load() {
-        try (Connection c = Database.getConnection();
-             PreparedStatement p = c.prepareStatement(
-                 "SELECT u.full_name, u.email, u.phone, e.address, e.emergency_contact " +
-                 "FROM users u JOIN employees e ON u.id = e.user_id WHERE u.id = ?")) {
-            p.setInt(1, session.getId());
-            try (ResultSet r = p.executeQuery()) {
-                if (r.next()) {
-                    full.setText(r.getString(1));
-                    email.setText(r.getString(2));
-                    phone.setText(r.getString(3));
-                    address.setText(r.getString(4));
-                    emergency.setText(r.getString(5));
+    private void loadProfile() {
+        String sql =
+            "SELECT " +
+            "u.full_name, " +
+            "u.email, " +
+            "u.phone, " +
+            "e.address, " +
+            "e.emergency_contact " +
+            "FROM users u " +
+            "JOIN employees e " +
+            "ON u.id = e.user_id " +
+            "WHERE u.id = ?";
+
+        try (
+            Connection connection =
+                Database.getConnection();
+
+            PreparedStatement statement =
+                connection.prepareStatement(sql)
+        ) {
+            statement.setInt(
+                1,
+                session.getId()
+            );
+
+            try (
+                ResultSet resultSet =
+                    statement.executeQuery()
+            ) {
+                if (resultSet.next()) {
+                    full.setText(
+                        safeDatabaseText(
+                            resultSet.getString("full_name")
+                        )
+                    );
+
+                    email.setText(
+                        safeDatabaseText(
+                            resultSet.getString("email")
+                        )
+                    );
+
+                    phone.setText(
+                        safeDatabaseText(
+                            resultSet.getString("phone")
+                        )
+                    );
+
+                    address.setText(
+                        safeDatabaseText(
+                            resultSet.getString("address")
+                        )
+                    );
+
+                    emergency.setText(
+                        safeDatabaseText(
+                            resultSet.getString(
+                                "emergency_contact"
+                            )
+                        )
+                    );
                 }
             }
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
-    private void save() {
-        try (Connection c = Database.getConnection()) {
-            c.setAutoCommit(false);
-            try (PreparedStatement u = c.prepareStatement(
-                     "UPDATE users SET full_name=?, email=?, phone=? WHERE id=?");
-                 PreparedStatement e = c.prepareStatement(
-                     "UPDATE employees SET address=?, emergency_contact=? WHERE user_id=?")) {
+    private void saveProfile() {
+        try (
+            Connection connection =
+                Database.getConnection()
+        ) {
+            connection.setAutoCommit(false);
 
-                u.setString(1, full.getText().trim());
-                u.setString(2, email.getText().trim());
-                u.setString(3, phone.getText().trim());
-                u.setInt(4, session.getId());
-                u.executeUpdate();
+            try (
+                PreparedStatement userStatement =
+                    connection.prepareStatement(
+                        "UPDATE users SET " +
+                        "full_name=?, email=?, phone=? " +
+                        "WHERE id=?"
+                    );
 
-                e.setString(1, address.getText().trim());
-                e.setString(2, emergency.getText().trim());
-                e.setInt(3, session.getId());
-                e.executeUpdate();
+                PreparedStatement employeeStatement =
+                    connection.prepareStatement(
+                        "UPDATE employees SET " +
+                        "address=?, emergency_contact=? " +
+                        "WHERE user_id=?"
+                    )
+            ) {
+                userStatement.setString(
+                    1,
+                    full.getText().trim()
+                );
 
-                c.commit();
-                AuditService.log(session.getId(), "UPDATE", "PROFILE", "Updated employee profile.");
-                Dialogs.info(this, "Profile saved.");
-            } catch (Exception ex) {
-                c.rollback();
-                throw ex;
+                userStatement.setString(
+                    2,
+                    email.getText().trim()
+                );
+
+                userStatement.setString(
+                    3,
+                    phone.getText().trim()
+                );
+
+                userStatement.setInt(
+                    4,
+                    session.getId()
+                );
+
+                userStatement.executeUpdate();
+
+                employeeStatement.setString(
+                    1,
+                    address.getText().trim()
+                );
+
+                employeeStatement.setString(
+                    2,
+                    emergency.getText().trim()
+                );
+
+                employeeStatement.setInt(
+                    3,
+                    session.getId()
+                );
+
+                employeeStatement.executeUpdate();
+
+                connection.commit();
+
+                AuditService.log(
+                    session.getId(),
+                    "UPDATE",
+                    "PROFILE",
+                    "Updated employee profile."
+                );
+
+                Dialogs.info(
+                    this,
+                    "Profile saved."
+                );
+
+            } catch (Exception exception) {
+                connection.rollback();
+                throw exception;
+
             } finally {
-                c.setAutoCommit(true);
+                connection.setAutoCommit(true);
             }
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 
-    private void change() {
+    private void changePassword() {
         try {
             new AuthService().changePassword(
                 session.getId(),
-                new String(oldp.getPassword()),
-                new String(newp.getPassword())
+                new String(oldPassword.getPassword()),
+                new String(newPassword.getPassword())
             );
-            Dialogs.info(this, "Password changed.");
-            oldp.setText("");
-            newp.setText("");
-        } catch (Exception ex) {
-            Dialogs.error(this, ex.getMessage());
+
+            Dialogs.info(
+                this,
+                "Password changed."
+            );
+
+            oldPassword.setText("");
+            newPassword.setText("");
+
+        } catch (Exception exception) {
+            Dialogs.error(
+                this,
+                exception.getMessage()
+            );
         }
     }
 }
